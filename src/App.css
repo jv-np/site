@@ -109,11 +109,10 @@ html, body, #root { background: var(--bg); }
 }
 
 .line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: block;
+  line-height: 1.55;
 }
+.line .ps1 + .cmd-text { margin-left: 8px; }
 .ps1 { white-space: nowrap; user-select: none; }
 .ps1 .arrow { color: var(--accent); margin-right: 6px; text-shadow: 0 0 8px var(--accent-dim); }
 .ps1 .user  { color: var(--accent); }
@@ -126,43 +125,41 @@ html, body, #root { background: var(--bg); }
 .cmd-cancel { color: var(--danger); margin-left: 4px; font-weight: 500; }
 
 /* ─── active prompt ───────────────────────────────────────────────────── */
+/* one continuous baseline-aligned inline flow → ps1, typed, ghost, caret */
 .active-line {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  flex-wrap: nowrap;
+  display: block;
+  line-height: 1.55;
 }
 .active-input-wrap {
   position: relative;
-  flex: 1;
-  min-width: 0;
+  display: inline;
 }
-.active-input-row {
-  display: inline-flex;
-  align-items: center;
-  white-space: pre;
-}
-.typed { color: var(--fg); white-space: pre; }
-.ghost { color: var(--fg-faint); white-space: pre; opacity: 0.55; }
+.typed { color: var(--fg); white-space: pre-wrap; }
+.ghost { color: var(--fg-faint); white-space: pre-wrap; opacity: 0.55; }
+/* caret is a real glyph → inherits font baseline + box exactly.
+   zero-width inline-block so it overlays the next char (ghost or empty)
+   instead of pushing layout — matches fish/terminal cursor-on-cell behavior. */
 .caret {
   display: inline-block;
-  width: 0.6ch;
-  height: 1.1em;
-  background: var(--accent);
-  vertical-align: -2px;
-  margin-left: 1px;
+  width: 0;
+  color: var(--accent);
+  text-shadow: 0 0 3px var(--accent-dim);
   animation: blink 1.05s steps(2, end) infinite;
-  box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent-dim);
+  pointer-events: none;
+  overflow: visible;
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* hidden real input — captures keys */
+/* hidden real input — covers the entire active line so any click focuses it */
 .real-input {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1.55em;
   width: 100%;
-  height: 100%;
+  min-width: 1px;
   opacity: 0;
   border: none;
   outline: none;
@@ -175,111 +172,64 @@ html, body, #root { background: var(--bg); }
   z-index: 3;
 }
 
-/* ─── floating completion menu ────────────────────────────────────────── */
-.menu-anchor {
-  position: relative;
+/* ─── inline completion strip (single horizontal row) ─────────────────── */
+.strip {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--fg-faint);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  animation: stripIn 140ms var(--ease);
 }
-.menu {
-  position: relative;
-  z-index: 4;
-  margin-top: 8px;
-  margin-left: var(--menu-offset, 0px);
-  width: max-content;
-  min-width: 320px;
-  max-width: min(560px, calc(100vw - 64px));
-  background: var(--bg-elev);
-  border: 1px solid var(--border-hi);
-  border-radius: 4px;
-  box-shadow:
-    0 0 0 1px rgba(0, 255, 136, 0.04),
-    0 12px 36px rgba(0, 0, 0, 0.65);
-  overflow: hidden;
-  animation: menuIn 150ms var(--ease);
-}
-@keyframes menuIn {
-  from { opacity: 0; transform: translateY(-3px); }
+.strip::-webkit-scrollbar { display: none; }
+@keyframes stripIn {
+  from { opacity: 0; transform: translateY(-1px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-/* tether line connecting cursor → menu */
-.menu::before {
+.strip .lead {
+  color: var(--fg-faint);
+  letter-spacing: 0.04em;
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.strip .lead .ac { color: var(--accent); }
+.strip-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  font: inherit;
+  color: var(--fg-dim);
+  position: relative;
+  font-family: var(--font-mono);
+}
+.strip-item .name { color: var(--fg); font-weight: 500; }
+.strip-item .name .match { color: var(--accent); }
+.strip-item:hover .name,
+.strip-item.active .name { color: var(--accent); text-shadow: 0 0 8px var(--accent-dim); }
+.strip-item.active::after {
   content: '';
   position: absolute;
-  top: -8px;
-  left: 14px;
-  width: 1px;
-  height: 8px;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1px;
   background: var(--accent);
   box-shadow: 0 0 6px var(--accent-dim);
 }
-.menu::after {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 12px;
-  width: 5px;
-  height: 5px;
-  background: var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 0 8px var(--accent);
-}
-
-.menu-head {
-  padding: 6px 12px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg-faint);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  background: var(--bg);
-}
-.menu-head .ac { color: var(--accent); }
-.menu-list { list-style: none; margin: 0; padding: 4px 0; max-height: 280px; overflow-y: auto; }
-.menu-item {
-  display: grid;
-  grid-template-columns: 14px max-content 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 12px;
-  cursor: pointer;
-  color: var(--fg-dim);
-  font-size: 13px;
-  border-left: 2px solid transparent;
-}
-.menu-item .glyph { color: var(--fg-faint); font-size: 11px; text-align: center; }
-.menu-item .name  { color: var(--fg); font-weight: 500; }
-.menu-item .desc  {
-  color: var(--fg-faint); font-size: 12px;
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.menu-item .hint  { color: var(--fg-faint); font-size: 10px; }
-.menu-item .name .match { color: var(--accent); }
-.menu-item.active {
-  background: linear-gradient(90deg, rgba(0,255,136,0.10), transparent 80%);
-  border-left-color: var(--accent);
-}
-.menu-item.active .glyph { color: var(--accent); }
-.menu-item.active .name  { color: var(--accent); }
-.menu-foot {
-  padding: 6px 12px;
-  border-top: 1px solid var(--border);
-  font-size: 10px;
-  color: var(--fg-faint);
-  display: flex;
-  justify-content: space-between;
-  background: var(--bg);
-}
-.menu-foot kbd {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--fg-dim);
-  border: 1px solid var(--border-hi);
-  border-radius: 3px;
-  padding: 0 4px;
-  margin: 0 2px;
-  background: var(--bg-elev);
-}
+.strip-item .sep { color: var(--border-hi); margin: 0 6px; }
+.strip-empty { color: var(--fg-faint); font-style: italic; }
 
 /* ─── rich output panels ──────────────────────────────────────────────── */
 .panel {

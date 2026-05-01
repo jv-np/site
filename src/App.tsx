@@ -306,15 +306,14 @@ function App() {
           </div>
         ))}
 
-        {/* active prompt */}
+        {/* active prompt — single baseline-aligned inline flow */}
         <div className="active-line">
           <Ps1 />
-          <div className="active-input-wrap menu-anchor">
-            <div className="active-input-row">
-              <span className="typed">{input}</span>
-              {ghost && <span className="ghost">{ghost}</span>}
-              <span className="caret" aria-hidden />
-            </div>
+          <span> </span>
+          <span className="active-input-wrap">
+            <span className="typed">{input}</span>
+            <span className="caret" aria-hidden>█</span>
+            {ghost && <span className="ghost">{ghost}</span>}
             <input
               ref={inputRef}
               className="real-input mono"
@@ -328,37 +327,30 @@ function App() {
               autoComplete="off"
               aria-label="terminal input"
             />
+          </span>
 
-            {menuOpen && completions.length > 0 && (
-              <div className="menu" role="listbox" aria-label="completions">
-                <div className="menu-head">
-                  <span><span className="ac">▸</span> completions {input && <>· filter: <span className="ac">{input}</span></>}</span>
-                  <span>{menuIdx + 1}/{completions.length}</span>
-                </div>
-                <ul className="menu-list">
-                  {completions.map((c, i) => (
-                    <li
-                      key={c.name}
-                      className={`menu-item${i === menuIdx ? ' active' : ''}`}
-                      onMouseEnter={() => setMenuIdx(i)}
-                      onMouseDown={(e) => { e.preventDefault(); typeAndRun(c.name); }}
-                      role="option"
-                      aria-selected={i === menuIdx}
-                    >
-                      <span className="glyph">›</span>
-                      <HiName name={c.name} q={input} />
-                      <span className="desc">{c.summary}</span>
-                      <span className="hint">{c.usage ?? ''}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="menu-foot">
-                  <span><kbd>↵</kbd> run · <kbd>tab</kbd> accept · <kbd>esc</kbd> hide</span>
-                  <span><kbd>^↑</kbd><kbd>^↓</kbd> history</span>
-                </div>
-              </div>
-            )}
-          </div>
+          {menuOpen && completions.length > 0 && (
+            <div className="strip" role="listbox" aria-label="completions">
+              <span className="lead mono">
+                <span className="ac">↳</span> {input ? <>match</> : <>try</>} ·
+              </span>
+              {completions.map((c, i) => (
+                <button
+                  key={c.name}
+                  type="button"
+                  className={`strip-item${i === menuIdx ? ' active' : ''}`}
+                  onMouseEnter={() => setMenuIdx(i)}
+                  onMouseDown={(e) => { e.preventDefault(); typeAndRun(c.name); }}
+                  role="option"
+                  aria-selected={i === menuIdx}
+                  title={c.summary}
+                >
+                  <HiName name={c.name} q={input} />
+                  {i < completions.length - 1 && <span className="sep">·</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div ref={bottomRef} />
