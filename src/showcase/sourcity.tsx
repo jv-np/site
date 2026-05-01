@@ -1,6 +1,6 @@
-
 import { useEffect, useRef } from 'react';
 import videoUrl from '../assets/sourcity-on-sourcity.mp4';
+import { ShowcaseFrame } from './ShowcaseFrame';
 
 export default function Sourcity() {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -27,31 +27,26 @@ export default function Sourcity() {
   }, []);
 
   return (
-    <div ref={rootRef} className="sc" onClick={(e) => e.stopPropagation()}>
-      {/* compact preview shown when card is collapsed */}
-      <div className="sc-preview">
-        <span className="sc-dot" />
-        <span className="sc-label">sourcity-on-sourcity.mp4</span>
-        <span className="sc-hint mono">▶ expand to play</span>
+    <ShowcaseFrame
+      rootRef={rootRef}
+      className="sc"
+      label="sourcity-on-sourcity.mp4"
+      hint="▶ expand to play"
+      stopClickPropagation
+    >
+      <video
+        ref={videoRef}
+        className="sc-video"
+        src={videoUrl}
+        controls
+        preload="none"
+        playsInline
+        onClick={(event) => event.stopPropagation()}
+      />
+      <div className="sc-cap mono">
+        <span className="sc-ps1">$</span>
+        <span># rendered from sourcity using OBS</span>
       </div>
-
-      {/* full player shown only when card is expanded.
-          preload="none" → zero network until the user actually hits play. */}
-      <div className="sc-full">
-        <video
-          ref={videoRef}
-          className="sc-video"
-          src={videoUrl}
-          controls
-          preload="none"
-          playsInline
-          onClick={(e) => e.stopPropagation()}
-        />
-        <div className="sc-cap mono">
-          <span className="sc-ps1">$</span>
-          <span># rendered from sourcity using OBS</span>
-        </div>
-      </div>
-    </div>
+    </ShowcaseFrame>
   );
 }

@@ -1,4 +1,5 @@
-import { Code } from "../Code";
+import { Code } from '../Code';
+import { ShowcaseFrame } from './ShowcaseFrame';
 
 export default function VoxCPMRs() {
   const code = `
@@ -22,15 +23,8 @@ export default function VoxCPMRs() {
   `;
 
   return (
-    <div>
-      <div className="sc-preview">
-        <span className="sc-dot" />
-        <span className="sc-label">voxcpm-rs-example</span>
-        <span className="sc-hint mono">▶ expand to see</span>
-      </div>
-      <div className="sc-full">
-        <Code lang="rust">{code}</Code>
-      </div>
-    </div>
+    <ShowcaseFrame label="voxcpm-rs-example" hint="▶ expand to see">
+      <Code lang="rust">{code}</Code>
+    </ShowcaseFrame>
   );
 }

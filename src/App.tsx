@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { primaryNames, registry, unknownCommand } from './commands';
+import { MAX_HISTORY_ENTRIES, normalizeAliases, normalizeHistory, resolveAlias } from './terminal';
 import { usePersistentState } from './usePersistentState';
 import './App.css';
 
@@ -18,6 +19,14 @@ const PROMPT_CWD  = '~';
 const TEXT_ENTRY_SELECTOR = 'input, textarea, select, [contenteditable="true"]';
 const POINTER_ACTION_SELECTOR = 'a[href], button, [role="button"], [role="link"], summary, video[controls], audio[controls]';
 
+const BOOT_ASCII = String.raw`   _                
+  (_)__   __  _ __            jv.n shell
+  | |\ \ / / | '_ \           v1.0.0 · 2026
+  | | \ V /_ | | | |          a portfolio that thinks it's a terminal
+ _/ |  \_/(_)|_| |_|
+|__/                
+`.trimEnd();
+
 function closestElement(target: EventTarget | null, selector: string) {
   return target instanceof Element ? target.closest(selector) : null;
 }
@@ -28,23 +37,6 @@ function isTextEntryTarget(target: EventTarget | null) {
 
 function shouldReturnPromptFocus(target: EventTarget | null) {
   return !isTextEntryTarget(target) && Boolean(closestElement(target, POINTER_ACTION_SELECTOR));
-}
-
-/* resolve a command-line by expanding the first token via the alias map.
-   protects against cycles by capping iterations. */
-function resolveAlias(line: string, aliases: Record<string, string>): string {
-  let current = line.trim();
-  const seen = new Set<string>();
-  for (let i = 0; i < 16; i++) {
-    const space = current.search(/\s/);
-    const head = space === -1 ? current : current.slice(0, space);
-    const tail = space === -1 ? '' : current.slice(space);
-    const expanded = aliases[head];
-    if (!expanded || seen.has(head)) return current;
-    seen.add(head);
-    current = (expanded + tail).trim();
-  }
-  return current;
 }
 
 function Ps1() {
@@ -76,13 +68,31 @@ function HiName({ name, q }: { name: string; q: string }) {
   );
 }
 
+function BootOutput() {
+  return (
+    <div className="boot">
+      <div className="row"><span className="ok">[ok]</span><span className="what">mounted <span className="hl">tty/jv.n</span></span></div>
+      <div className="row"><span className="ok">[ok]</span><span className="what">loaded <span className="hl">~/projects</span> · <span className="hl">~/articles</span></span></div>
+      <div className="row"><span className="ok">[ok]</span><span className="what">network <span className="hl">online</span> · uplink stable</span></div>
+      <pre className="ascii">{BOOT_ASCII}</pre>
+      <p className="welcome">
+        welcome. <span className="dim">type a command, press </span><span className="ac">tab</span><span className="dim"> to complete, or click anything in the menu below.</span>
+      </p>
+    </div>
+  );
+}
+
+function bootEntry(): Entry {
+  return { id: nextId++, cmd: '', output: <BootOutput /> };
+}
+
 function App() {
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [entries, setEntries] = useState<Entry[]>(() => [bootEntry()]);
   const [input, setInput] = useState('');
   const [history, setHistory] = usePersistentState<string[]>(
     'jv:history',
     [],
-    (raw) => (Array.isArray(raw) ? (raw as unknown[]).map(String).slice(-200) : undefined),
+    normalizeHistory,
   );
   const [histIdx, setHistIdx] = useState<number | null>(null);
   const [menuIdx, setMenuIdx] = useState(0);
@@ -92,13 +102,8 @@ function App() {
   const [aliases, setAliases] = usePersistentState<Record<string, string>>(
     'jv:aliases',
     {},
-    (raw) => (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, string> : undefined),
+    normalizeAliases,
   );
-
-  // persist history
-  useEffect(() => {
-    if (history.length > 200) setHistory((h) => h.slice(-200));
-  }, [history, setHistory]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -143,34 +148,19 @@ function App() {
     const cmd = registry[name.toLowerCase()];
     const output: ReactNode = cmd ? cmd.run(args, ctx) : unknownCommand(name);
 
-    setHistory((h) => (h[h.length - 1] === line ? h : [...h, line]));
+    setHistory((historyEntries) => (
+      historyEntries[historyEntries.length - 1] === line
+        ? historyEntries
+        : [...historyEntries, line].slice(-MAX_HISTORY_ENTRIES)
+    ));
     if (cmd && cmd.name === 'clear') return; // clear handled its own output
     setEntries((prev) => [...prev, { id: nextId++, cmd: line, output }]);
   }, [ctx, setHistory]);
 
-  const ascii = String.raw`   _                
-  (_)__   __  _ __            jv.n shell
-  | |\ \ / / | '_ \           v1.0.0 · 2026
-  | | \ V /_ | | | |          a portfolio that thinks it's a terminal
- _/ |  \_/(_)|_| |_|
-|__/                
-`.trimEnd();
-
   /* ── boot ──────────────────────────────────────────────────────────── */
   useEffect(() => {
-    const boot: ReactNode = (
-      <div className="boot">
-        <div className="row"><span className="ok">[ok]</span><span className="what">mounted <span className="hl">tty/jv.n</span></span></div>
-        <div className="row"><span className="ok">[ok]</span><span className="what">loaded <span className="hl">~/projects</span> · <span className="hl">~/articles</span></span></div>
-        <div className="row"><span className="ok">[ok]</span><span className="what">network <span className="hl">online</span> · uplink stable</span></div>
-        <pre className="ascii">{ascii}</pre>
-        <p className="welcome">
-          welcome. <span className="dim">type a command, press </span><span className="ac">tab</span><span className="dim"> to complete, or click anything in the menu below.</span>
-        </p>
-      </div>
-    );
-    setEntries([{ id: nextId++, cmd: '', output: boot }]);
-    setTimeout(() => inputRef.current?.focus(), 30);
+    const timerId = window.setTimeout(() => inputRef.current?.focus(), 30);
+    return () => window.clearTimeout(timerId);
   }, []);
 
   /* ── auto-scroll ───────────────────────────────────────────────────── */
@@ -220,10 +210,9 @@ function App() {
       });
   }, [input]);
 
-  // clamp menu cursor when filter changes
-  useEffect(() => {
-    if (menuIdx >= completions.length) setMenuIdx(0);
-  }, [completions, menuIdx]);
+  const activeMenuIdx = completions.length === 0
+    ? 0
+    : Math.min(menuIdx, completions.length - 1);
 
   // ghost suggestion: completion of the first matching command sharing the prefix
   const ghost = useMemo(() => {
@@ -269,12 +258,12 @@ function App() {
     if (menuOpen && completions.length > 0) {
       if (e.ctrlKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
-        setMenuIdx((i) => (i + 1) % completions.length);
+        setMenuIdx((index) => (Math.min(index, completions.length - 1) + 1) % completions.length);
         return;
       }
       if (e.ctrlKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
-        setMenuIdx((i) => (i - 1 + completions.length) % completions.length);
+        setMenuIdx((index) => (Math.min(index, completions.length - 1) - 1 + completions.length) % completions.length);
         return;
       }
     }
@@ -283,7 +272,7 @@ function App() {
       e.preventDefault();
       // accept ghost first; otherwise pick highlighted menu item
       if (ghost) setInput(input + ghost);
-      else if (completions[menuIdx]) setInput(completions[menuIdx].name);
+      else if (completions[activeMenuIdx]) setInput(completions[activeMenuIdx].name);
       return;
     }
 
@@ -412,11 +401,11 @@ function App() {
                 <button
                   key={c.name}
                   type="button"
-                  className={`strip-item${i === menuIdx ? ' active' : ''}`}
+                  className={`strip-item${i === activeMenuIdx ? ' active' : ''}`}
                   onMouseEnter={() => setMenuIdx(i)}
                   onMouseDown={(e) => { e.preventDefault(); typeAndRun(c.name); }}
                   role="option"
-                  aria-selected={i === menuIdx}
+                  aria-selected={i === activeMenuIdx}
                   title={c.summary}
                 >
                   <HiName name={c.name} q={input} />

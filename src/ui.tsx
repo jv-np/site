@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { CommandCtx } from './commands';
+import type { CommandCtx } from './commandTypes';
 
 /** standard error line used by every command that reports failure */
 export function Err({ children }: { children: ReactNode }) {
