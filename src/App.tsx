@@ -15,6 +15,20 @@ let nextId = 1;
 const PROMPT_USER = 'guest';
 const PROMPT_HOST = 'jv';
 const PROMPT_CWD  = '~';
+const TEXT_ENTRY_SELECTOR = 'input, textarea, select, [contenteditable="true"]';
+const POINTER_ACTION_SELECTOR = 'a[href], button, [role="button"], [role="link"], summary, video[controls], audio[controls]';
+
+function closestElement(target: EventTarget | null, selector: string) {
+  return target instanceof Element ? target.closest(selector) : null;
+}
+
+function isTextEntryTarget(target: EventTarget | null) {
+  return Boolean(closestElement(target, TEXT_ENTRY_SELECTOR));
+}
+
+function shouldReturnPromptFocus(target: EventTarget | null) {
+  return !isTextEntryTarget(target) && Boolean(closestElement(target, POINTER_ACTION_SELECTOR));
+}
 
 /* resolve a command-line by expanding the first token via the alias map.
    protects against cycles by capping iterations. */
@@ -89,6 +103,7 @@ function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef(false);
+  const pointerActionRef = useRef(false);
   const aliasesRef = useRef(aliases);
   useEffect(() => { aliasesRef.current = aliases; }, [aliases]);
   const typeAndRunRef = useRef<(cmd: string) => void>(() => {});
@@ -165,8 +180,21 @@ function App() {
     const sel = window.getSelection();
     if (sel && sel.toString().length > 0) return;
     const tgt = e.target as HTMLElement | null;
-    if (tgt && tgt.closest('a, button, input, .menu')) return;
+    if (tgt && tgt.closest(`${POINTER_ACTION_SELECTOR}, ${TEXT_ENTRY_SELECTOR}, .strip`)) return;
     inputRef.current?.focus();
+  };
+
+  const trackPointerAction = (e: React.PointerEvent) => {
+    pointerActionRef.current = shouldReturnPromptFocus(e.target);
+  };
+
+  const refocusAfterPointerAction = () => {
+    if (!pointerActionRef.current) return;
+    pointerActionRef.current = false;
+    window.requestAnimationFrame(() => {
+      if (isTextEntryTarget(document.activeElement)) return;
+      inputRef.current?.focus();
+    });
   };
 
   /* ── completions ───────────────────────────────────────────────────── */
@@ -310,7 +338,12 @@ function App() {
   };
 
   return (
-    <div className="term" onMouseUp={refocus}>
+    <div
+      className="term"
+      onPointerDownCapture={trackPointerAction}
+      onClickCapture={refocusAfterPointerAction}
+      onMouseUp={refocus}
+    >
       {/* status strip */}
       <div className="statusbar mono">
         <div className="left">
