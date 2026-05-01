@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "jv-n",
+	"name": "jv-mii-nipah",
 	"main": "worker/index.ts",
 	"compatibility_date": "2026-05-01",
 	"assets": {
