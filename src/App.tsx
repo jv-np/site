@@ -47,10 +47,22 @@ function HiName({ name, q }: { name: string; q: string }) {
 function App() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [input, setInput] = useState('');
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('jv:history');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.slice(-200) : [];
+    } catch { return []; }
+  });
   const [histIdx, setHistIdx] = useState<number | null>(null);
   const [menuIdx, setMenuIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(true);
+
+  // persist history
+  useEffect(() => {
+    try { localStorage.setItem('jv:history', JSON.stringify(history.slice(-200))); } catch { /* ignore */ }
+  }, [history]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -183,14 +195,14 @@ function App() {
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (typingRef.current) { e.preventDefault(); return; }
 
-    // menu navigation
+    // menu navigation (Ctrl-N/P only — ↑/↓ reserved for history)
     if (menuOpen && completions.length > 0) {
-      if (e.key === 'ArrowDown' || (e.ctrlKey && e.key.toLowerCase() === 'n')) {
+      if (e.ctrlKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         setMenuIdx((i) => (i + 1) % completions.length);
         return;
       }
-      if (e.key === 'ArrowUp' || (e.ctrlKey && e.key.toLowerCase() === 'p')) {
+      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setMenuIdx((i) => (i - 1 + completions.length) % completions.length);
         return;
@@ -221,24 +233,22 @@ function App() {
       return;
     }
 
-    // bash-style history (without menu interference: ↑/↓ already taken)
-    if (!menuOpen || completions.length === 0) {
-      if (e.key === 'ArrowUp') {
-        if (history.length === 0) return;
-        e.preventDefault();
-        const idx = histIdx === null ? history.length - 1 : Math.max(0, histIdx - 1);
-        setHistIdx(idx);
-        setInput(history[idx]);
-        return;
-      }
-      if (e.key === 'ArrowDown') {
-        if (histIdx === null) return;
-        e.preventDefault();
-        const idx = histIdx + 1;
-        if (idx >= history.length) { setHistIdx(null); setInput(''); }
-        else { setHistIdx(idx); setInput(history[idx]); }
-        return;
-      }
+    // shell history — ↑/↓ always (terminal-correct)
+    if (e.key === 'ArrowUp' && !e.ctrlKey) {
+      if (history.length === 0) return;
+      e.preventDefault();
+      const idx = histIdx === null ? history.length - 1 : Math.max(0, histIdx - 1);
+      setHistIdx(idx);
+      setInput(history[idx]);
+      return;
+    }
+    if (e.key === 'ArrowDown' && !e.ctrlKey) {
+      if (histIdx === null) return;
+      e.preventDefault();
+      const idx = histIdx + 1;
+      if (idx >= history.length) { setHistIdx(null); setInput(''); }
+      else { setHistIdx(idx); setInput(history[idx]); }
+      return;
     }
 
     // alt-history fallback: Ctrl-↑/↓ always traverses history
@@ -296,12 +306,14 @@ function App() {
       <div className="term-inner">
         {entries.map((e) => (
           <div key={e.id} className="entry">
-            {e.cmd !== '' && (
+            {e.cmd === '' && e.output == null ? (
+              <div className="line"><Ps1 /></div>
+            ) : e.cmd !== '' ? (
               <div className="line">
                 <Ps1 />
                 <span className="cmd-text">{e.cmd}</span>
               </div>
-            )}
+            ) : null}
             {e.output}
           </div>
         ))}

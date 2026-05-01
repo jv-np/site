@@ -401,3 +401,7 @@ html, body, #root { background: var(--bg); }
 .contact-link .val { color: var(--fg); }
 
 .panel ::selection { background: var(--accent); color: var(--bg); }
+
+/* terminal-style selection everywhere */
+::selection { background: var(--fg); color: var(--bg); }
+.real-input::selection { background: var(--fg); color: var(--bg); }

@@ -133,22 +133,36 @@ const fmtDate = (iso: string) =>
 
 const articlesCmd: Command = {
   name: 'articles',
-  summary: 'list writing (alias: blog)',
-  run: () => (
-    <Panel title="articles" meta={`${articles.length} posts`}>
-      <div className="articles">
-        {articles.map((a) => (
-          <a key={a.id} href={a.url} className="article-row">
-            <span className="article-date mono">{fmtDate(a.date)}</span>
-            <span className="article-title">{a.title}</span>
-            <span className="article-meta mono">
-              {a.tags.join(' · ')} &nbsp; {a.readingMin}m
-            </span>
-          </a>
-        ))}
-      </div>
-    </Panel>
-  ),
+  summary: 'list writing (alias: blog) — articles <query> to filter',
+  usage: 'articles [query]',
+  run: (args) => {
+    const q = (args.join(' ') || '').trim().toLowerCase();
+    const list = q
+      ? articles.filter((a) =>
+          a.title.toLowerCase().includes(q) ||
+          a.tags.some((t) => t.toLowerCase().includes(q)),
+        )
+      : articles;
+    return (
+      <Panel title="articles" meta={q ? `${list.length}/${articles.length} · “${q}”` : `${articles.length} posts`}>
+        {list.length === 0 ? (
+          <p className="text-out"><span className="dim">no posts match</span> <span className="hl">{q}</span></p>
+        ) : (
+          <div className="articles">
+            {list.map((a) => (
+              <a key={a.id} href={a.url} className="article-row">
+                <span className="article-date mono">{fmtDate(a.date)}</span>
+                <span className="article-title">{a.title}</span>
+                <span className="article-meta mono">
+                  {a.tags.join(' · ')} &nbsp; {a.readingMin}m
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
+      </Panel>
+    );
+  },
 };
 
 const contact: Command = {
