@@ -24,7 +24,7 @@ export const projects: Project[] = [
   },
   {
     id: '02',
-    name: 'mii-style',
+    name: 'ufs-csharp',
     description: '"universal file system" for csharp, a nice utility for having an unified API to talk with multiple abstracted file systems (real file system, in-memory or even minIO).',
     tags: ['csharp', 'filesystem', 'library'],
     url: 'https://github.com/jv-np/ufs-csharp',
@@ -91,6 +91,16 @@ export const projects: Project[] = [
     url: 'https://github.com/mii-nipah/voxcpm-rs',
     year: '2026',
     component: React.lazy(() => import('./showcase/voxcpm-rs')),
+    expandable: true,
+  },
+  {
+    id: '10',
+    name: 'edify.mc',
+    description: 'a minecraft mod that allows for great destruction and havoc, allows you to strike down entire structures to the ground.',
+    tags: ['minecraft', 'mod', 'destruction'],
+    url: 'https://github.com/mii-nipah/edify.mc',
+    year: '2025 - 2026',
+    component: React.lazy(() => import('./showcase/edify.mc')),
     expandable: true,
   }
 ] as const;
