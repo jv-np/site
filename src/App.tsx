@@ -341,7 +341,7 @@ function App() {
         <div className="left">
           <span className="live">online</span>
           <span className="sep">·</span>
-          <span><span className="key">tty</span> jv/0</span>
+          <span><span className="key">tty</span> jv.n/0</span>
           <span className="sep">·</span>
           <span><span className="key">cwd</span> ~</span>
         </div>
