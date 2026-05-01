@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Fragment, Suspense, useEffect, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { links, projects } from './data';
 import { articles, findArticle } from './articles';
 import { Err, Out, RunChip } from './ui';
@@ -130,19 +129,7 @@ function Showcase() {
   }
 
   function commit(next: string | null) {
-    // animate layout change with the View Transitions API when available;
-    // fall back to a plain state update otherwise.
-    const startVT = (document as Document & {
-      startViewTransition?: (cb: () => void) => unknown;
-    }).startViewTransition;
-    if (typeof startVT === 'function') {
-      startVT.call(document, () => {
-        // flushSync so the DOM mutates inside the transition capture window.
-        flushSync(() => setExpandedId(next));
-      });
-    } else {
-      setExpandedId(next);
-    }
+    setExpandedId(next);
   }
 
   function expand(id: string) {
@@ -154,10 +141,17 @@ function Showcase() {
     flush();
     leaveTimer.current = window.setTimeout(() => {
       leaveTimer.current = null;
-      // only collapse if the same card is still expanded — go through
-      // commit() so the shrink is animated by the same view transition
-      // pipeline as the expand.
-      if (expandedIdRef.current === id) commit(null);
+      // embeds can mark themselves busy via [data-busy="true"] on the
+      // .card to defer collapse (e.g. while mii-text is streaming a response).
+      if (expandedIdRef.current !== id) return;
+      const busy = document.querySelector(
+        '.card-expanded[data-busy="true"]'
+      );
+      if (busy) {
+        scheduleCollapse(id);
+        return;
+      }
+      commit(null);
     }, 1000);
   }
 
@@ -192,7 +186,6 @@ function ProjectCard({
       target={p.url.startsWith('http') ? '_blank' : undefined}
       rel="noopener noreferrer"
       className={`card${expanded ? ' card-expanded' : ''}`}
-      style={expandable ? { viewTransitionName: `prj-${p.id}` } : undefined}
       onMouseEnter={expandable ? onExpand : undefined}
       onMouseLeave={expandable ? onCollapse : undefined}
       onFocus={expandable ? onExpand : undefined}

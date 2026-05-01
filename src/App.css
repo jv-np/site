@@ -300,8 +300,8 @@ html, body, #root { background: var(--bg); }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  grid-auto-rows: 275px;
+  grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+  grid-auto-rows: 250px;
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
@@ -316,10 +316,17 @@ html, body, #root { background: var(--bg); }
   gap: 10px;
   text-decoration: none;
   color: inherit;
+  justify-self: start;
+  width: 100%;
+  min-width: 100%;
   height: 100%;
   overflow: hidden;
   position: relative;
-  transition: background var(--dur) var(--ease);
+  transition:
+    width 340ms var(--ease),
+    min-width 340ms var(--ease),
+    background var(--dur) var(--ease);
+  will-change: width;
 }
 .card:hover { background: #0f0f0f; }
 .card:hover .card-title { color: var(--accent); text-shadow: 0 0 12px var(--accent-dim); }
@@ -333,13 +340,16 @@ html, body, #root { background: var(--bg); }
   transition: border-color var(--dur) var(--ease);
 }
 .card:hover::before { border-left-color: var(--accent); }
-/* hover-expanded card: take two grid columns so embedded widgets
-   (long command lines, players, etc.) get room to breathe. JS holds
-   this state for ~1s after mouseleave so the user can reach into
-   the embed without it shrinking. */
-.card-expanded { grid-column: span 2; z-index: 2; }
+/* hover-expanded card: grow over the next grid column instead of
+   changing grid placement. width is animatable, so both expand and
+   shrink stay smooth without View Transition snapshots getting clipped. */
+.card-expanded {
+  width: calc(200% + 1px);
+  min-width: calc(200% + 1px);
+  z-index: 2;
+}
 @media (max-width: 720px) {
-  .card-expanded { grid-column: auto; }
+  .card-expanded { width: 100%; min-width: 100%; }
 }
 
 /* embeds get whatever vertical room is left between description and tags. */
@@ -471,18 +481,6 @@ html, body, #root { background: var(--bg); }
   animation: blink 1.05s steps(2, end) infinite;
 }
 
-/* smooth the layout shift via the View Transitions API.
-   the ProjectCard sets `view-transition-name: prj-<id>` so the browser
-   captures pre/post snapshots and crossfades + tweens position. */
-::view-transition-group(*) {
-  animation-duration: 260ms;
-  animation-timing-function: var(--ease);
-}
-::view-transition-old(*),
-::view-transition-new(*) {
-  animation-duration: 220ms;
-  animation-timing-function: var(--ease);
-}
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .card-id { font-size: 10px; color: var(--fg-faint); letter-spacing: 0.06em; }
 .arrow {
