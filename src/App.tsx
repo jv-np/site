@@ -148,19 +148,22 @@ function App() {
     setEntries((prev) => [...prev, { id: nextId++, cmd: line, output }]);
   }, [ctx, setHistory]);
 
+  const ascii = String.raw`   _                
+  (_)__   __  _ __            jv.n shell
+  | |\ \ / / | '_ \           v1.0.0 · 2026
+  | | \ V /_ | | | |          a portfolio that thinks it's a terminal
+ _/ |  \_/(_)|_| |_|
+|__/                
+`.trimEnd();
+
   /* ── boot ──────────────────────────────────────────────────────────── */
   useEffect(() => {
     const boot: ReactNode = (
       <div className="boot">
-        <div className="row"><span className="ok">[ok]</span><span className="what">mounted <span className="hl">tty/jv</span></span></div>
+        <div className="row"><span className="ok">[ok]</span><span className="what">mounted <span className="hl">tty/jv.n</span></span></div>
         <div className="row"><span className="ok">[ok]</span><span className="what">loaded <span className="hl">~/projects</span> · <span className="hl">~/articles</span></span></div>
         <div className="row"><span className="ok">[ok]</span><span className="what">network <span className="hl">online</span> · uplink stable</span></div>
-        <pre className="ascii">{`   _ __   __
-  (_)\\ \\ / /     jv shell
-  | | \\ V /      v1.0.0 · 2026
-  | |  \\_/       a portfolio that thinks it's a terminal
- _/ |
-|__/`}</pre>
+        <pre className="ascii">{ascii}</pre>
         <p className="welcome">
           welcome. <span className="dim">type a command, press </span><span className="ac">tab</span><span className="dim"> to complete, or click anything in the menu below.</span>
         </p>
