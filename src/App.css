@@ -442,3 +442,18 @@ html, body, #root { background: var(--bg); }
 .prose blockquote { border-left: 2px solid var(--border-hi);
   padding-left: 14px; color: var(--fg-faint); font-style: normal; }
 .prose hr { border: none; border-top: 1px dashed var(--border); margin: 18px 0; }
+
+/* clickable path token (used in `ls` listing) — looks like normal text,
+   accent color, runs the relevant command on click. */
+.path {
+  font: inherit;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur) var(--ease);
+}
+.path:hover { border-bottom-color: var(--accent); }

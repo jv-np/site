@@ -282,17 +282,54 @@ const ls: Command = {
   summary: 'list a section (projects | articles | all)',
   usage: 'ls <projects|articles|all>',
   run: (args, ctx) => {
-    const what = args[0] ?? 'all';
-    if (what === 'projects') return showcase.run([], ctx);
+    const raw = (args[0] ?? 'all').trim();
+    const what = raw.replace(/\/+$/, '').toLowerCase(); // tolerate trailing slash
+    if (what === '' || what === 'all' || what === '.' || what === '~') {
+      return (
+        <p className="text-out">
+          <button type="button" className="path" onClick={() => ctx.type('ls showcase')}>showcase/</button>
+          {'  '}
+          <button type="button" className="path" onClick={() => ctx.type('ls articles')}>articles/</button>
+          {'  '}
+          <button type="button" className="path" onClick={() => ctx.type('cat about.md')}>about.md</button>
+          {'  '}
+          <button type="button" className="path" onClick={() => ctx.type('cat contact.md')}>contact.md</button>
+        </p>
+      );
+    }
+    if (what === 'showcase' || what === 'projects') return showcase.run([], ctx);
     if (what === 'articles' || what === 'blog') return articlesCmd.run([], ctx);
-    if (what === 'all') return (
-      <p className="text-out">
-        <span className="ac">showcase/</span>  <span className="ac">articles/</span>  <span className="ac">about.md</span>  <span className="ac">contact.md</span>
-      </p>
-    );
+    // file-like refs route to cat for coherence
+    if (what === 'about.md' || what === 'contact.md' || what === 'about' || what === 'contact') {
+      return catCmd.run([what], ctx);
+    }
     return (
       <p className="err"><span className="glyph">✗</span>
-        <span>ls: no such section <span className="mono">'{what}'</span></span>
+        <span>ls: no such section <span className="mono">'{raw}'</span> — try <span className="mono">ls</span></span>
+      </p>
+    );
+  },
+};
+
+const catCmd: Command = {
+  name: 'cat',
+  summary: 'show a file (about.md | contact.md)',
+  usage: 'cat <about.md|contact.md>',
+  run: (args, ctx) => {
+    const raw = (args[0] ?? '').trim().toLowerCase();
+    const target = raw.replace(/\.md$/, '');
+    if (target === 'about') return about.run([], ctx);
+    if (target === 'contact') return contact.run([], ctx);
+    if (!raw) {
+      return (
+        <p className="err"><span className="glyph">✗</span>
+          <span>cat: missing file. try <span className="mono">about.md</span> or <span className="mono">contact.md</span></span>
+        </p>
+      );
+    }
+    return (
+      <p className="err"><span className="glyph">✗</span>
+        <span>cat: <span className="mono">{raw}</span>: no such file</span>
       </p>
     );
   },
@@ -377,7 +414,7 @@ const unaliasCmd: Command = {
 };
 
 export const registry: Record<string, Command> = Object.fromEntries(
-  [help, about, showcase, articlesCmd, article, contact, open, ls, whoami, date, echo, aliasCmd, unaliasCmd, clear, exitCmd, blog, projectsAlias]
+  [help, about, showcase, articlesCmd, article, contact, open, ls, catCmd, whoami, date, echo, aliasCmd, unaliasCmd, clear, exitCmd, blog, projectsAlias]
     .map((c) => [c.name, c]),
 );
 
