@@ -298,6 +298,8 @@ html, body, #root { background: var(--bg); }
 .about ul li strong { color: var(--fg); font-weight: 500; }
 @media (max-width: 720px) { .about { grid-template-columns: 1fr; gap: 16px; } }
 
+.showcase-frame { position: relative; }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
@@ -322,15 +324,17 @@ html, body, #root { background: var(--bg); }
   height: 100%;
   overflow: hidden;
   position: relative;
-  transition:
-    width 340ms var(--ease),
-    min-width 340ms var(--ease),
-    background var(--dur) var(--ease);
-  will-change: width;
+  transition: background var(--dur) var(--ease);
+  -webkit-user-drag: none;
+}
+/* embed contents must remain selectable even though the card is an <a>. */
+.card-embed, .card-embed * {
+  -webkit-user-drag: none;
+  user-select: text;
 }
 .card:hover { background: #0f0f0f; }
 .card:hover .card-title { color: var(--accent); text-shadow: 0 0 12px var(--accent-dim); }
-.card:hover .arrow { transform: translate(2px, -2px); color: var(--accent); }
+.card:not(.card-expandable):hover .arrow { transform: translate(2px, -2px); color: var(--accent); }
 .card::before {
   content: '';
   position: absolute;
@@ -340,20 +344,118 @@ html, body, #root { background: var(--bg); }
   transition: border-color var(--dur) var(--ease);
 }
 .card:hover::before { border-left-color: var(--accent); }
-/* hover-expanded card: grow over the next grid column instead of
-   changing grid placement. width is animatable, so both expand and
-   shrink stay smooth without View Transition snapshots getting clipped. */
-.card-expanded {
-  width: calc(200% + 1px);
-  min-width: calc(200% + 1px);
-  z-index: 2;
+
+/* expandable cards: click to open a modal preview. corners hint at
+   the action; the small ↗ link still lets you skip straight to the
+   project URL. */
+.card-expandable { cursor: pointer; }
+.card-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.card-corner-tl { top: 6px; left: 6px; border-right: none; border-bottom: none; transform: translate(2px, 2px); }
+.card-corner-tr { top: 6px; right: 6px; border-left: none; border-bottom: none; transform: translate(-2px, 2px); }
+.card-corner-bl { bottom: 6px; left: 6px; border-right: none; border-top: none; transform: translate(2px, -2px); }
+.card-corner-br { bottom: 6px; right: 6px; border-left: none; border-top: none; transform: translate(-2px, -2px); }
+.card-expandable:hover .card-corner,
+.card-expandable:focus-visible .card-corner {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+.card-link {
+  color: var(--fg-faint);
+  text-decoration: none;
+  padding: 0 5px;
+  border-radius: 2px;
+  line-height: 1.4;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.card-link:hover { color: var(--accent); background: var(--bg-deep); }
+
+/* modal-style expanded card floats over the showcase frame. the
+   in-grid card stays visually intact (no layout shift), and the
+   modal renders a fresh instance of the embed beside it. */
+.card-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 3;
+  cursor: zoom-out;
+  animation: showcase-fade 160ms var(--ease) both;
+}
+.card-expanded.card-modal {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100% - 32px));
+  min-width: 0;
+  height: auto;
+  z-index: 4;
+  border: 1px solid var(--border-hi);
+  box-shadow:
+    0 16px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 1px var(--bg),
+    0 0 30px var(--accent-dim);
+  animation: showcase-pop 200ms var(--ease) both;
+}
+.card-expanded.card-modal::before { border-left-color: var(--accent); }
+/* leave room for the floating close button so it doesn't collide
+   with the head's ↗ arrow. */
+.card-modal .card-head { padding-right: 28px; }
+.card-modal-controls {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-close {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1;
+  padding: 1px 7px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.card-close:hover {
+  color: var(--accent);
+  border-color: var(--border-hi);
+  background: var(--bg-deep);
+}
+@keyframes showcase-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes showcase-pop {
+  from { opacity: 0; transform: translateX(-50%) scale(0.97); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 @media (max-width: 720px) {
-  .card-expanded { width: 100%; min-width: 100%; }
+  .card-expanded.card-modal {
+    top: 8px;
+    bottom: 8px;
+    width: calc(100% - 16px);
+  }
 }
 
 /* embeds get whatever vertical room is left between description and tags. */
-.card-embed { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.card-embed { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; cursor: auto; }
 
 /* ─── mii-text showcase embed ─────────────────────────────────────────
    two-mode widget: a compact preview when the card is collapsed, and

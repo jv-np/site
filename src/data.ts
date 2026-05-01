@@ -64,6 +64,15 @@ export const projects: Project[] = [
     year: '2026',
     component: React.lazy(() => import('./showcase/mii-text')),
     expandable: true,
+  },
+  {
+    id: '07',
+    name: 'sourcity',
+    description: 'a Gource alternative that shows the history of a git repository as a city, where each file is a building that grows with file size and each commit is a new work that is done.',
+    tags: ['simulation', 'city', 'gource-alternative'],
+    url: 'https://github.com/mii-nipah/sourcity',
+    year: '2026',
+    component: React.lazy(() => import('./showcase/sourcity')),
   }
 ] as const;
 

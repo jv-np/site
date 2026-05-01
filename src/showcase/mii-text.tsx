@@ -84,7 +84,7 @@ export default function MiiText() {
         <span className="mt-label">mii-text</span>
         <span className="mt-meta">
           <span className="mt-meta-full">sample {idx + 1}/{SAMPLES.length}</span>
-          <span className="mt-meta-mini">{sample.label} · hover to try</span>
+          <span className="mt-meta-mini">{sample.label} · click to open</span>
         </span>
         <button
           type="button"

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Fragment, Suspense, useEffect, useRef, useState } from 'react';
+import { Fragment, Suspense, useEffect, useState } from 'react';
 import { links, projects } from './data';
 import { articles, findArticle } from './articles';
 import { Err, Out, RunChip } from './ui';
@@ -113,92 +113,120 @@ type Project = (typeof projects)[number];
 function Showcase() {
   // single source of truth → only one card can be expanded at a time.
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const expandedIdRef = useRef<string | null>(null);
-  const leaveTimer = useRef<number | null>(null);
+  const expanded = expandedId
+    ? projects.find((p) => p.id === expandedId) ?? null
+    : null;
 
-  useEffect(() => { expandedIdRef.current = expandedId; }, [expandedId]);
-  useEffect(() => () => {
-    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
-  }, []);
-
-  function flush() {
-    if (leaveTimer.current !== null) {
-      window.clearTimeout(leaveTimer.current);
-      leaveTimer.current = null;
-    }
-  }
-
-  function commit(next: string | null) {
-    setExpandedId(next);
-  }
-
-  function expand(id: string) {
-    flush();
-    if (expandedIdRef.current === id) return;
-    commit(id);
-  }
-  function scheduleCollapse(id: string) {
-    flush();
-    leaveTimer.current = window.setTimeout(() => {
-      leaveTimer.current = null;
-      // embeds can mark themselves busy via [data-busy="true"] on the
-      // .card to defer collapse (e.g. while mii-text is streaming a response).
-      if (expandedIdRef.current !== id) return;
-      const busy = document.querySelector(
-        '.card-expanded[data-busy="true"]'
-      );
-      if (busy) {
-        scheduleCollapse(id);
-        return;
-      }
-      commit(null);
-    }, 1000);
-  }
+  // close on Escape while a modal is open.
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpandedId(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [expanded]);
 
   return (
-    <div className="grid">
-      {projects.map((p) => (
-        <ProjectCard
-          key={p.id}
-          p={p}
-          expanded={expandedId === p.id}
-          onExpand={() => expand(p.id)}
-          onCollapse={() => scheduleCollapse(p.id)}
-        />
-      ))}
+    <div className={`showcase-frame${expanded ? ' showcase-frame-modal' : ''}`}>
+      <div className="grid">
+        {projects.map((p) => (
+          <ProjectCard
+            key={p.id}
+            p={p}
+            onExpand={() => setExpandedId(p.id)}
+          />
+        ))}
+      </div>
+      {expanded ? (
+        <ExpandedCard p={expanded} onClose={() => setExpandedId(null)} />
+      ) : null}
     </div>
   );
 }
 
-function ProjectCard({
-  p, expanded, onExpand, onCollapse,
-}: {
-  p: Project;
-  expanded: boolean;
-  onExpand: () => void;
-  onCollapse: () => void;
-}) {
+function ProjectCard({ p, onExpand }: { p: Project; onExpand: () => void }) {
   const expandable = Boolean(p.expandable);
 
+  if (!expandable) {
+    return (
+      <a
+        href={p.url}
+        target={p.url.startsWith('http') ? '_blank' : undefined}
+        rel="noopener noreferrer"
+        className="card"
+        draggable={false}
+      >
+        <CardBody p={p} />
+      </a>
+    );
+  }
+
   return (
-    <a
-      href={p.url}
-      target={p.url.startsWith('http') ? '_blank' : undefined}
-      rel="noopener noreferrer"
-      className={`card${expanded ? ' card-expanded' : ''}`}
-      onMouseEnter={expandable ? onExpand : undefined}
-      onMouseLeave={expandable ? onCollapse : undefined}
-      onFocus={expandable ? onExpand : undefined}
-      onBlur={expandable ? onCollapse : undefined}
+    <div
+      className="card card-expandable"
+      role="button"
+      tabIndex={0}
+      onClick={onExpand}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onExpand();
+        }
+      }}
     >
+      <span className="card-corner card-corner-tl" aria-hidden />
+      <span className="card-corner card-corner-tr" aria-hidden />
+      <span className="card-corner card-corner-bl" aria-hidden />
+      <span className="card-corner card-corner-br" aria-hidden />
+      <CardBody p={p} expandable />
+    </div>
+  );
+}
+
+function CardBody({
+  p, expandable, inModal,
+}: {
+  p: Project;
+  expandable?: boolean;
+  inModal?: boolean;
+}) {
+  const external = p.url.startsWith('http');
+  return (
+    <>
       <div className="card-head">
         <span className="card-id mono">PRJ-{p.id} · {p.year}</span>
-        <span className="arrow mono">↗</span>
+        {expandable && !inModal ? (
+          <a
+            className="card-link mono"
+            href={p.url}
+            target={external ? '_blank' : undefined}
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title="open project (skip preview)"
+            aria-label="open project"
+            draggable={false}
+          >↗</a>
+        ) : (
+          <span className="arrow mono">↗</span>
+        )}
       </div>
       <div className="card-title">{p.name}</div>
       <p className="card-desc">{p.description}</p>
       {p.component ? (
-        <div className="card-embed">
+        <div
+          className="card-embed"
+          // capture-phase so we run *before* any child's stopPropagation;
+          // the wrapping <a>/role=button must never react to clicks inside
+          // the embedded project widget.
+          onClickCapture={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          // anchors are natively draggable, which hijacks text selection
+          // inside the embed by spawning a link-drag ghost. cancel it.
+          onDragStart={(e) => e.preventDefault()}
+        >
           <Suspense fallback={<p className="card-desc">loading project...</p>}>
             <p.component />
           </Suspense>
@@ -207,7 +235,43 @@ function ProjectCard({
       <ul className="tags">
         {p.tags.map((t) => <li key={t} className="tag">{t}</li>)}
       </ul>
-    </a>
+    </>
+  );
+}
+
+function ExpandedCard({ p, onClose }: { p: Project; onClose: () => void }) {
+  const external = p.url.startsWith('http');
+  return (
+    <>
+      <div
+        className="card-backdrop"
+        onClick={onClose}
+        aria-hidden
+      />
+      <a
+        href={p.url}
+        target={external ? '_blank' : undefined}
+        rel="noopener noreferrer"
+        className="card card-expanded card-modal"
+        aria-label={`open ${p.name}`}
+        draggable={false}
+      >
+        <div className="card-modal-controls">
+          <button
+            type="button"
+            className="card-close mono"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="close (esc)"
+            title="close (esc)"
+          >×</button>
+        </div>
+        <CardBody p={p} expandable inModal />
+      </a>
+    </>
   );
 }
 
