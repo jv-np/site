@@ -89,6 +89,7 @@ function bootEntry(): Entry {
 function App() {
   const [entries, setEntries] = useState<Entry[]>(() => [bootEntry()]);
   const [input, setInput] = useState('');
+  const [caretPos, setCaretPos] = useState(0);
   const [history, setHistory] = usePersistentState<string[]>(
     'jv:history',
     [],
@@ -167,6 +168,14 @@ function App() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
   }, [entries, input, menuOpen]);
+
+  /* ── keep caret in sync with hidden input (covers programmatic setInput) */
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const pos = el.selectionStart ?? input.length;
+    setCaretPos((prev) => (prev === pos && prev <= input.length ? prev : Math.min(pos, input.length)));
+  }, [input]);
 
   /* ── keep focus when clicking the terminal ─────────────────────────── */
   const refocus = (e: React.MouseEvent) => {
@@ -268,7 +277,9 @@ function App() {
       }
     }
 
-    if (e.key === 'Tab') {
+    const atEnd = inputRef.current ? inputRef.current.selectionStart === input.length : true;
+
+    if (e.key === 'Tab' || (e.key === 'ArrowRight' && atEnd && (ghost || completions[activeMenuIdx]))) {
       e.preventDefault();
       // accept ghost first; otherwise pick highlighted menu item
       if (ghost) setInput(input + ghost);
@@ -374,15 +385,24 @@ function App() {
           <Ps1 />
           <span> </span>
           <span className="active-input-wrap">
-            <span className="typed">{input}</span>
+            <span className="typed">{input.slice(0, caretPos)}</span>
             <span className="caret" aria-hidden>█</span>
-            {ghost && <span className="ghost">{ghost}</span>}
+            <span className="typed">{input.slice(caretPos)}</span>
+            {ghost && caretPos === input.length && <span className="ghost">{ghost}</span>}
             <input
               ref={inputRef}
               className="real-input mono"
               value={input}
-              onChange={(e) => { setInput(e.target.value); setMenuOpen(true); setHistIdx(null); }}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setCaretPos(e.target.selectionStart ?? e.target.value.length);
+                setMenuOpen(true);
+                setHistIdx(null);
+              }}
               onKeyDown={onKey}
+              onKeyUp={(e) => setCaretPos(e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
+              onSelect={(e) => setCaretPos(e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
+              onClick={(e) => setCaretPos(e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
               onFocus={() => setMenuOpen(true)}
               spellCheck={false}
               autoCapitalize="off"
