@@ -68,7 +68,7 @@ export const projects: Project[] = [
   {
     id: '07',
     name: 'sourcity',
-    description: 'a Gource alternative that shows the history of a git repository as a city, where each file is a building that grows with file size and each commit is a new work that is done.',
+    description: 'a Gource alternative that shows the history of a git repository as a city, where each file is a building.',
     tags: ['simulation', 'city', 'gource-alternative'],
     url: 'https://github.com/mii-nipah/sourcity',
     year: '2026',

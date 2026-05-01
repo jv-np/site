@@ -540,6 +540,89 @@ html, body, #root { background: var(--bg); }
 .card-expanded .mt-meta-mini { display: none; }
 .card-expanded .mt-meta-full { display: inline; }
 
+/* ─── sourcity showcase embed ─────────────────────────────────────────
+   collapsed: tiny "film strip" affordance with the file name.
+   expanded:  a real <video preload="none"> the user can play.
+   nothing is fetched until the user actually hits play. */
+.sc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.sc-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--fg-dim);
+}
+.sc-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 8px var(--accent-dim);
+  flex-shrink: 0;
+}
+.sc-label {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10px;
+}
+.sc-hint {
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.sc-full { display: none; }
+.card-expanded .sc-preview { display: none; }
+.card-expanded .sc-full {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.sc-video {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  outline: none;
+  /* keep aspect-ratio sane when the modal is tall and narrow */
+  object-fit: contain;
+  cursor: auto;
+}
+.sc-cap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-faint);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-ps1 {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent-dim);
+  user-select: none;
+  flex-shrink: 0;
+}
+
 .wmax {
   width: 100%;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, Fragment, type MouseEvent } from 'react';
 type Sample = { label: string; system: string; prompt: string; reply: string };
 
 const SAMPLES: Sample[] = [
@@ -129,10 +129,10 @@ export default function MiiText() {
             </div>
             <div>
               {commandLines.slice(1).map((line, i) => (
-                <>
-                  <code key={i} className="mt-cmd">&nbsp;&nbsp;&nbsp;&nbsp;{line}</code>
+                <Fragment key={i}>
+                  <code className="mt-cmd">&nbsp;&nbsp;&nbsp;&nbsp;{line}</code>
                   <br />
-                </>
+                </Fragment>
               ))}
             </div>
           </div>
