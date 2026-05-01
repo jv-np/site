@@ -12,8 +12,12 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
+		"@mdx-js/react": "^3.1.1",
+		"@mdx-js/rollup": "^3.1.1",
 		"react": "^19.2.5",
-		"react-dom": "^19.2.5"
+		"react-dom": "^19.2.5",
+		"remark-frontmatter": "^5.0.0",
+		"remark-mdx-frontmatter": "^5.2.0"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.35.0",

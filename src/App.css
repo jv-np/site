@@ -151,7 +151,9 @@ html, body, #root { background: var(--bg); }
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* hidden real input — covers the entire active line so any click focuses it */
+/* hidden real input — covers the entire active line so any click focuses it.
+   user-select: none so dragging across the active line selects the visible
+   .typed text instead of the invisible input contents. */
 .real-input {
   position: absolute;
   left: 0;
@@ -170,7 +172,10 @@ html, body, #root { background: var(--bg); }
   padding: 0;
   margin: 0;
   z-index: 3;
+  user-select: none;
+  -webkit-user-select: none;
 }
+.typed, .ghost, .cmd-text { user-select: text; -webkit-user-select: text; }
 
 /* ─── inline completion strip (single horizontal row) ─────────────────── */
 .strip {
@@ -357,9 +362,15 @@ html, body, #root { background: var(--bg); }
   gap: 20px;
   align-items: center;
   padding: 9px 14px;
+  border: none;
   border-bottom: 1px solid var(--border);
+  background: transparent;
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
   transition: background var(--dur) var(--ease);
 }
 .article-row:last-child { border-bottom: none; }
@@ -404,4 +415,32 @@ html, body, #root { background: var(--bg); }
 
 /* terminal-style selection everywhere */
 ::selection { background: var(--fg); color: var(--bg); }
-.real-input::selection { background: var(--fg); color: var(--bg); }
+.real-input::selection { background: transparent; color: transparent; }
+
+/* MDX article body — restrained prose */
+.prose { max-width: 70ch; line-height: 1.65; color: var(--fg); }
+.prose > * + * { margin-top: 12px; }
+.prose h2 { font-size: 14px; color: var(--fg); text-transform: lowercase;
+  letter-spacing: 0.02em; margin-top: 22px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--border); }
+.prose h3 { font-size: 13px; color: var(--fg); margin-top: 18px; }
+.prose p { color: var(--fg-dim); }
+.prose strong { color: var(--fg); font-weight: 600; }
+.prose em { color: var(--accent); font-style: normal; }
+.prose a { color: var(--accent); text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.prose a:hover { background: var(--accent); color: var(--bg);
+  text-decoration: none; }
+.prose code { font-family: var(--font-mono); font-size: 12px;
+  background: var(--bg-elev); padding: 1px 5px; border-radius: 2px;
+  color: var(--accent); }
+.prose pre { background: var(--bg-elev); border: 1px solid var(--border);
+  border-left: 2px solid var(--accent); padding: 10px 12px; overflow-x: auto;
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.55; }
+.prose pre code { background: transparent; padding: 0; color: var(--fg); }
+.prose ul, .prose ol { padding-left: 22px; color: var(--fg-dim); }
+.prose li + li { margin-top: 4px; }
+.prose ul li::marker { color: var(--accent); }
+.prose blockquote { border-left: 2px solid var(--border-hi);
+  padding-left: 14px; color: var(--fg-faint); font-style: normal; }
+.prose hr { border: none; border-top: 1px dashed var(--border); margin: 18px 0; }

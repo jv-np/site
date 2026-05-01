@@ -15,6 +15,23 @@ const PROMPT_USER = 'guest';
 const PROMPT_HOST = 'jv';
 const PROMPT_CWD  = '~';
 
+/* resolve a command-line by expanding the first token via the alias map.
+   protects against cycles by capping iterations. */
+function resolveAlias(line: string, aliases: Record<string, string>): string {
+  let current = line.trim();
+  const seen = new Set<string>();
+  for (let i = 0; i < 16; i++) {
+    const space = current.search(/\s/);
+    const head = space === -1 ? current : current.slice(0, space);
+    const tail = space === -1 ? '' : current.slice(space);
+    const expanded = aliases[head];
+    if (!expanded || seen.has(head)) return current;
+    seen.add(head);
+    current = (expanded + tail).trim();
+  }
+  return current;
+}
+
 function Ps1() {
   return (
     <span className="ps1 mono">
@@ -59,21 +76,51 @@ function App() {
   const [menuIdx, setMenuIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(true);
 
+  // persisted aliases: name -> command line
+  const [aliases, setAliases] = useState<Record<string, string>>(() => {
+    try {
+      const raw = localStorage.getItem('jv:aliases');
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed as Record<string, string> : {};
+    } catch { return {}; }
+  });
+
   // persist history
   useEffect(() => {
     try { localStorage.setItem('jv:history', JSON.stringify(history.slice(-200))); } catch { /* ignore */ }
   }, [history]);
 
+  // persist aliases
+  useEffect(() => {
+    try { localStorage.setItem('jv:aliases', JSON.stringify(aliases)); } catch { /* ignore */ }
+  }, [aliases]);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef(false);
+  const aliasesRef = useRef(aliases);
+  useEffect(() => { aliasesRef.current = aliases; }, [aliases]);
 
   /* ── execution ─────────────────────────────────────────────────────── */
   const ctx = useMemo(
     () => ({
       clear: () => setEntries([]),
       run: (cmd: string) => execute(cmd),
+      get aliases() { return aliasesRef.current; },
+      setAlias: (name: string, value: string | null) => {
+        setAliases((prev) => {
+          if (value === null) {
+            const next = { ...prev };
+            delete next[name];
+            return next;
+          }
+          return { ...prev, [name]: value };
+        });
+      },
     }),
+    // execute is recreated when ctx changes; we capture via closure-stable pattern
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -83,7 +130,9 @@ function App() {
       setEntries((prev) => [...prev, { id: nextId++, cmd: '', output: null }]);
       return;
     }
-    const [name, ...args] = line.split(/\s+/);
+    // resolve alias on first token (with cycle protection)
+    const resolved = resolveAlias(line, aliasesRef.current);
+    const [name, ...args] = resolved.split(/\s+/);
     const cmd = registry[name.toLowerCase()];
     const output: ReactNode = cmd ? cmd.run(args, ctx) : unknownCommand(name);
 

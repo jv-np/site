@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
-import { articles, links, projects } from './data';
+import { links, projects } from './data';
+import { articles, findArticle } from './articles';
 
 export type CommandCtx = {
   clear: () => void;
   run: (cmd: string) => void;
+  aliases: Record<string, string>;
+  setAlias: (name: string, value: string | null) => void;
 };
 
 export type Command = {
@@ -135,12 +138,13 @@ const articlesCmd: Command = {
   name: 'articles',
   summary: 'list writing (alias: blog) — articles <query> to filter',
   usage: 'articles [query]',
-  run: (args) => {
+  run: (args, ctx) => {
     const q = (args.join(' ') || '').trim().toLowerCase();
     const list = q
       ? articles.filter((a) =>
           a.title.toLowerCase().includes(q) ||
-          a.tags.some((t) => t.toLowerCase().includes(q)),
+          a.tags.some((t) => t.toLowerCase().includes(q)) ||
+          a.slug.toLowerCase().includes(q),
         )
       : articles;
     return (
@@ -150,16 +154,56 @@ const articlesCmd: Command = {
         ) : (
           <div className="articles">
             {list.map((a) => (
-              <a key={a.id} href={a.url} className="article-row">
+              <button
+                key={a.slug}
+                type="button"
+                className="article-row"
+                onClick={() => ctx.run(`article ${a.slug}`)}
+              >
                 <span className="article-date mono">{fmtDate(a.date)}</span>
                 <span className="article-title">{a.title}</span>
                 <span className="article-meta mono">
                   {a.tags.join(' · ')} &nbsp; {a.readingMin}m
                 </span>
-              </a>
+              </button>
             ))}
           </div>
         )}
+        <p className="text-out" style={{ marginTop: 12 }}>
+          <span className="dim">read with</span> <span className="mono ac">article &lt;slug&gt;</span>
+        </p>
+      </Panel>
+    );
+  },
+};
+
+const article: Command = {
+  name: 'article',
+  summary: 'open an article by slug or title fragment',
+  usage: 'article <slug>',
+  run: (args) => {
+    const q = args.join(' ').trim();
+    if (!q) {
+      return (
+        <p className="err"><span className="glyph">✗</span>
+          <span>article: missing slug. try <span className="mono">articles</span> to list.</span>
+        </p>
+      );
+    }
+    const a = findArticle(q);
+    if (!a) {
+      return (
+        <p className="err"><span className="glyph">✗</span>
+          <span>article: no match for <span className="mono">{q}</span></span>
+        </p>
+      );
+    }
+    const Body = a.Component;
+    return (
+      <Panel title={a.title} meta={`${fmtDate(a.date)} · ${a.readingMin}m · ${a.tags.join(', ')}`}>
+        <div className="prose">
+          <Body />
+        </div>
       </Panel>
     );
   },
@@ -273,8 +317,66 @@ const exitCmd: Command = {
   ),
 };
 
+const aliasCmd: Command = {
+  name: 'alias',
+  summary: 'list or define a command alias (persisted)',
+  usage: 'alias [name[=value]]',
+  run: (args, ctx) => {
+    const joined = args.join(' ').trim();
+    if (!joined) {
+      const entries = Object.entries(ctx.aliases);
+      return (
+        <Panel title="alias" meta={`${entries.length} defined`}>
+          {entries.length === 0 ? (
+            <p className="text-out"><span className="dim">no aliases. try </span><span className="mono ac">alias g=showcase</span></p>
+          ) : (
+            <div className="help">
+              {entries.map(([k, v]) => (
+                <RowFragment key={k} k={k} v={v} />
+              ))}
+            </div>
+          )}
+        </Panel>
+      );
+    }
+    const eq = joined.indexOf('=');
+    if (eq === -1) {
+      const v = ctx.aliases[joined];
+      return v
+        ? <p className="text-out"><span className="mono ac">{joined}</span> <span className="dim">=</span> <span className="mono">{v}</span></p>
+        : <p className="err"><span className="glyph">✗</span><span>alias: <span className="mono">{joined}</span> not defined</span></p>;
+    }
+    const name = joined.slice(0, eq).trim();
+    let value = joined.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (!name || !value) {
+      return <p className="err"><span className="glyph">✗</span><span>alias: usage <span className="mono">alias name=value</span></span></p>;
+    }
+    if (registry[name] && !ctx.aliases[name]) {
+      return <p className="err"><span className="glyph">✗</span><span>alias: <span className="mono">{name}</span> shadows a builtin (refuse)</span></p>;
+    }
+    ctx.setAlias(name, value);
+    return <p className="text-out"><span className="dim">+</span> <span className="mono ac">{name}</span> <span className="dim">→</span> <span className="mono">{value}</span></p>;
+  },
+};
+
+const unaliasCmd: Command = {
+  name: 'unalias',
+  summary: 'remove a command alias',
+  usage: 'unalias <name>',
+  run: (args, ctx) => {
+    const name = (args[0] || '').trim();
+    if (!name) return <p className="err"><span className="glyph">✗</span><span>unalias: missing name</span></p>;
+    if (!ctx.aliases[name]) return <p className="err"><span className="glyph">✗</span><span>unalias: <span className="mono">{name}</span> not defined</span></p>;
+    ctx.setAlias(name, null);
+    return <p className="text-out"><span className="dim">−</span> <span className="mono">{name}</span></p>;
+  },
+};
+
 export const registry: Record<string, Command> = Object.fromEntries(
-  [help, about, showcase, articlesCmd, contact, open, ls, whoami, date, echo, clear, exitCmd, blog, projectsAlias]
+  [help, about, showcase, articlesCmd, article, contact, open, ls, whoami, date, echo, aliasCmd, unaliasCmd, clear, exitCmd, blog, projectsAlias]
     .map((c) => [c.name, c]),
 );
 
