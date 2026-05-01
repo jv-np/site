@@ -301,6 +301,7 @@ html, body, #root { background: var(--bg); }
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-auto-rows: 275px;
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
@@ -315,7 +316,8 @@ html, body, #root { background: var(--bg); }
   gap: 10px;
   text-decoration: none;
   color: inherit;
-  min-height: 160px;
+  height: 100%;
+  overflow: hidden;
   position: relative;
   transition: background var(--dur) var(--ease);
 }
@@ -331,6 +333,156 @@ html, body, #root { background: var(--bg); }
   transition: border-color var(--dur) var(--ease);
 }
 .card:hover::before { border-left-color: var(--accent); }
+/* hover-expanded card: take two grid columns so embedded widgets
+   (long command lines, players, etc.) get room to breathe. JS holds
+   this state for ~1s after mouseleave so the user can reach into
+   the embed without it shrinking. */
+.card-expanded { grid-column: span 2; z-index: 2; }
+@media (max-width: 720px) {
+  .card-expanded { grid-column: auto; }
+}
+
+/* embeds get whatever vertical room is left between description and tags. */
+.card-embed { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
+/* ─── mii-text showcase embed ─────────────────────────────────────────
+   two-mode widget: a compact preview when the card is collapsed, and
+   the full interactive REPL when the parent card is .card-expanded.
+   the toggle is purely CSS so React state never has to know about
+   card hover. */
+.mt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.mt-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--fg-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mt-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 8px var(--accent-dim);
+  flex-shrink: 0;
+}
+.mt-label { color: var(--fg-dim); }
+.mt-meta { margin-left: auto; color: var(--fg-faint); }
+.mt-meta-full { display: none; }
+.mt-meta-mini { display: inline; }
+.mt-ghost {
+  background: transparent;
+  border: 1px solid var(--border-hi);
+  color: var(--fg-dim);
+  padding: 1px 6px;
+  border-radius: 2px;
+  font: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+.mt-ps1 {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent-dim);
+  user-select: none;
+  flex-shrink: 0;
+}
+.mt-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--fg-dim);
+}
+.mt-preview-cmd {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg-dim);
+}
+.mt-full { display: none; }
+
+/* expanded mode: hide preview, reveal the full REPL */
+.card-expanded .mt-preview { display: none; }
+.card-expanded .mt-full {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.card-expanded .mt-meta-mini { display: none; }
+.card-expanded .mt-meta-full { display: inline; }
+
+.mt-cmd-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mt-cmd {
+  flex: 1; min-width: 0;
+  overflow-x: auto; white-space: nowrap;
+  color: var(--fg);
+  scrollbar-width: none;
+}
+.mt-cmd::-webkit-scrollbar { display: none; }
+.mt-run {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 3px 10px;
+  border-radius: 2px;
+  font: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.mt-run-off { border-color: var(--border-hi); color: var(--fg-faint); cursor: default; }
+.mt-out {
+  margin: 0;
+  flex: 1 1 auto;
+  min-height: 3.1em;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--fg);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  overflow: auto;
+}
+.mt-hint { color: var(--fg-faint); }
+.mt-caret {
+  display: inline-block;
+  margin-left: 1px;
+  color: var(--accent);
+  text-shadow: 0 0 4px var(--accent-dim);
+  animation: blink 1.05s steps(2, end) infinite;
+}
+
+/* smooth the layout shift via the View Transitions API.
+   the ProjectCard sets `view-transition-name: prj-<id>` so the browser
+   captures pre/post snapshots and crossfades + tweens position. */
+::view-transition-group(*) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease);
+}
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 220ms;
+  animation-timing-function: var(--ease);
+}
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .card-id { font-size: 10px; color: var(--fg-faint); letter-spacing: 0.06em; }
 .arrow {

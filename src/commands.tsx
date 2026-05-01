@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Fragment, Suspense } from 'react';
+import { Fragment, Suspense, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { links, projects } from './data';
 import { articles, findArticle } from './articles';
 import { Err, Out, RunChip } from './ui';
@@ -103,35 +104,119 @@ const showcase: Command = {
   summary: 'list projects (alias: ls projects)',
   run: () => (
     <Panel title="showcase" meta={`${projects.length} projects`}>
-      <div className="grid">
-        {projects.map((p) => (
-          <a
-            key={p.id}
-            href={p.url}
-            target={p.url.startsWith('http') ? '_blank' : undefined}
-            rel="noopener noreferrer"
-            className="card"
-          >
-            <div className="card-head">
-              <span className="card-id mono">PRJ-{p.id} · {p.year}</span>
-              <span className="arrow mono">↗</span>
-            </div>
-            <div className="card-title">{p.name}</div>
-            <p className="card-desc">{p.description}</p>
-            {p.component ? (
-                <Suspense fallback={<p className="card-desc">loading project...</p>}>
-                  <p.component />
-                </Suspense>
-            ) : null}
-            <ul className="tags">
-              {p.tags.map((t) => <li key={t} className="tag">{t}</li>)}
-            </ul>
-          </a>
-        ))}
-      </div>
+      <Showcase />
     </Panel>
   ),
 };
+
+type Project = (typeof projects)[number];
+
+function Showcase() {
+  // single source of truth → only one card can be expanded at a time.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const expandedIdRef = useRef<string | null>(null);
+  const leaveTimer = useRef<number | null>(null);
+
+  useEffect(() => { expandedIdRef.current = expandedId; }, [expandedId]);
+  useEffect(() => () => {
+    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+  }, []);
+
+  function flush() {
+    if (leaveTimer.current !== null) {
+      window.clearTimeout(leaveTimer.current);
+      leaveTimer.current = null;
+    }
+  }
+
+  function commit(next: string | null) {
+    // animate layout change with the View Transitions API when available;
+    // fall back to a plain state update otherwise.
+    const startVT = (document as Document & {
+      startViewTransition?: (cb: () => void) => unknown;
+    }).startViewTransition;
+    if (typeof startVT === 'function') {
+      startVT.call(document, () => {
+        // flushSync so the DOM mutates inside the transition capture window.
+        flushSync(() => setExpandedId(next));
+      });
+    } else {
+      setExpandedId(next);
+    }
+  }
+
+  function expand(id: string) {
+    flush();
+    if (expandedIdRef.current === id) return;
+    commit(id);
+  }
+  function scheduleCollapse(id: string) {
+    flush();
+    leaveTimer.current = window.setTimeout(() => {
+      leaveTimer.current = null;
+      // only collapse if the same card is still expanded — go through
+      // commit() so the shrink is animated by the same view transition
+      // pipeline as the expand.
+      if (expandedIdRef.current === id) commit(null);
+    }, 1000);
+  }
+
+  return (
+    <div className="grid">
+      {projects.map((p) => (
+        <ProjectCard
+          key={p.id}
+          p={p}
+          expanded={expandedId === p.id}
+          onExpand={() => expand(p.id)}
+          onCollapse={() => scheduleCollapse(p.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ProjectCard({
+  p, expanded, onExpand, onCollapse,
+}: {
+  p: Project;
+  expanded: boolean;
+  onExpand: () => void;
+  onCollapse: () => void;
+}) {
+  const expandable = Boolean(p.expandable);
+
+  return (
+    <a
+      href={p.url}
+      target={p.url.startsWith('http') ? '_blank' : undefined}
+      rel="noopener noreferrer"
+      className={`card${expanded ? ' card-expanded' : ''}`}
+      style={expandable ? { viewTransitionName: `prj-${p.id}` } : undefined}
+      onMouseEnter={expandable ? onExpand : undefined}
+      onMouseLeave={expandable ? onCollapse : undefined}
+      onFocus={expandable ? onExpand : undefined}
+      onBlur={expandable ? onCollapse : undefined}
+    >
+      <div className="card-head">
+        <span className="card-id mono">PRJ-{p.id} · {p.year}</span>
+        <span className="arrow mono">↗</span>
+      </div>
+      <div className="card-title">{p.name}</div>
+      <p className="card-desc">{p.description}</p>
+      {p.component ? (
+        <div className="card-embed">
+          <Suspense fallback={<p className="card-desc">loading project...</p>}>
+            <p.component />
+          </Suspense>
+        </div>
+      ) : null}
+      <ul className="tags">
+        {p.tags.map((t) => <li key={t} className="tag">{t}</li>)}
+      </ul>
+    </a>
+  );
+}
 
 const fmtDate = (iso: string) =>
   new Date(iso + 'T00:00:00Z')

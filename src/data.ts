@@ -8,6 +8,9 @@ export type Project = {
   url: string;
   year: string;
   component?: React.LazyExoticComponent<React.ComponentType>;
+  /** when true, the card grows horizontally on hover to give the
+   *  embedded component room (long command lines, etc.) */
+  expandable?: boolean;
 };
 
 export const projects: Project[] = [
@@ -60,6 +63,7 @@ export const projects: Project[] = [
     url: 'https://github.com/mii-nipah/mii-text',
     year: '2026',
     component: React.lazy(() => import('./showcase/mii-text')),
+    expandable: true,
   }
 ] as const;
 
