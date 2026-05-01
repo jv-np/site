@@ -101,12 +101,14 @@ function App() {
   const typingRef = useRef(false);
   const aliasesRef = useRef(aliases);
   useEffect(() => { aliasesRef.current = aliases; }, [aliases]);
+  const typeAndRunRef = useRef<(cmd: string) => void>(() => {});
 
   /* ── execution ─────────────────────────────────────────────────────── */
   const ctx = useMemo(
     () => ({
       clear: () => setEntries([]),
       run: (cmd: string) => execute(cmd),
+      type: (cmd: string) => typeAndRunRef.current(cmd),
       get aliases() { return aliasesRef.current; },
       setAlias: (name: string, value: string | null) => {
         setAliases((prev) => {
@@ -239,6 +241,7 @@ function App() {
     };
     setTimeout(step, 50);
   }, [execute]);
+  useEffect(() => { typeAndRunRef.current = typeAndRun; }, [typeAndRun]);
 
   /* ── input handling ────────────────────────────────────────────────── */
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {

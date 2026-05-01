@@ -151,9 +151,9 @@ html, body, #root { background: var(--bg); }
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* hidden real input — covers the entire active line so any click focuses it.
-   user-select: none so dragging across the active line selects the visible
-   .typed text instead of the invisible input contents. */
+/* hidden real input — receives keyboard but never blocks pointer events,
+   so text selection on the rest of the page works naturally. focus is
+   restored via the .term-level mouseup handler in App.tsx. */
 .real-input {
   position: absolute;
   left: 0;
@@ -172,10 +172,8 @@ html, body, #root { background: var(--bg); }
   padding: 0;
   margin: 0;
   z-index: 3;
-  user-select: none;
-  -webkit-user-select: none;
+  pointer-events: none;
 }
-.typed, .ghost, .cmd-text { user-select: text; -webkit-user-select: text; }
 
 /* ─── inline completion strip (single horizontal row) ─────────────────── */
 .strip {

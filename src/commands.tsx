@@ -5,6 +5,7 @@ import { articles, findArticle } from './articles';
 export type CommandCtx = {
   clear: () => void;
   run: (cmd: string) => void;
+  type: (cmd: string) => void;
   aliases: Record<string, string>;
   setAlias: (name: string, value: string | null) => void;
 };
@@ -158,7 +159,7 @@ const articlesCmd: Command = {
                 key={a.slug}
                 type="button"
                 className="article-row"
-                onClick={() => ctx.run(`article ${a.slug}`)}
+                onClick={() => ctx.type(`article ${a.slug}`)}
               >
                 <span className="article-date mono">{fmtDate(a.date)}</span>
                 <span className="article-title">{a.title}</span>
