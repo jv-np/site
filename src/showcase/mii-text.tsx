@@ -12,13 +12,15 @@ const SAMPLES: Sample[] = [
     label: 'haiku',
     system: 'reply in a single haiku',
     prompt: 'describe the unix philosophy',
-    reply: 'small tools, sharp edges —\npipes carry quiet intent\ndo one thing, do well',
+    reply: `Small tools work as one  
+Plain streams flow between each task  
+Do one thing well`,
   },
   {
     label: 'sysadmin',
     system: 'answer like a tired sysadmin at 3am',
     prompt: 'is the server down?',
-    reply: 'it is now. it was not. it will be again. coffee?',
+    reply: 'Yeah, looks like the server is down right now, and we’re poking it with the usual sticks to get it back up.',
   },
 ];
 
@@ -32,7 +34,12 @@ export default function MiiText() {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const sample = SAMPLES[idx];
-  const command = `echo '${sample.prompt}' | mii-text --ipc --quick --system '${sample.system}'`;
+  const command = `echo '${sample.prompt}' | mii-text \\
+    --ipc \\
+    --quick \\
+    --system '${sample.system}'`;
+  
+  const commandLines = command.split('\n');
 
   useEffect(() => () => {
     if (timer.current !== null) window.clearInterval(timer.current);
@@ -84,7 +91,7 @@ export default function MiiText() {
         <span className="mt-label">mii-text</span>
         <span className="mt-meta">
           <span className="mt-meta-full">sample {idx + 1}/{SAMPLES.length}</span>
-          <span className="mt-meta-mini">{sample.label} · click to open</span>
+          <span className="mt-meta-mini">{sample.label}</span>
         </span>
         <button
           type="button"
@@ -107,16 +114,28 @@ export default function MiiText() {
       {/* full UI shown only when card is expanded */}
       <div className="mt-full">
         <div className="mt-cmd-row">
-          <span className="mt-ps1">$</span>
-          <code className="mt-cmd">{command}</code>
-          <button
-            type="button"
-            onClick={run}
-            disabled={running}
-            className={running ? 'mt-run mt-run-off' : 'mt-run'}
-          >
-            {running ? '· running' : '▶ run'}
-          </button>
+          <div className="wmax">
+            <div className="mt-cmd-row">
+              <span className="mt-ps1">$</span>
+              <code className="mt-cmd">{commandLines[0]}</code>
+              <button
+                type="button"
+                onClick={run}
+                disabled={running}
+                className={running ? 'mt-run mt-run-off' : 'mt-run'}
+              >
+                {running ? '· running' : '▶ run'}
+              </button>
+            </div>
+            <div>
+              {commandLines.slice(1).map((line, i) => (
+                <>
+                  <code key={i} className="mt-cmd">&nbsp;&nbsp;&nbsp;&nbsp;{line}</code>
+                  <br />
+                </>
+              ))}
+            </div>
+          </div>
         </div>
 
         <pre className="mt-out">

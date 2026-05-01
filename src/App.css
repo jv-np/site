@@ -491,7 +491,7 @@ html, body, #root { background: var(--bg); }
   background: var(--accent); box-shadow: 0 0 8px var(--accent-dim);
   flex-shrink: 0;
 }
-.mt-label { color: var(--fg-dim); }
+.mt-label { color: var(--fg-dim); white-space: nowrap; }
 .mt-meta { margin-left: auto; color: var(--fg-faint); }
 .mt-meta-full { display: none; }
 .mt-meta-mini { display: inline; }
@@ -539,6 +539,10 @@ html, body, #root { background: var(--bg); }
 }
 .card-expanded .mt-meta-mini { display: none; }
 .card-expanded .mt-meta-full { display: inline; }
+
+.wmax {
+  width: 100%;
+}
 
 .mt-cmd-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mt-cmd {

@@ -73,6 +73,7 @@ export const projects: Project[] = [
     url: 'https://github.com/mii-nipah/sourcity',
     year: '2026',
     component: React.lazy(() => import('./showcase/sourcity')),
+    expandable: true,
   }
 ] as const;
 
