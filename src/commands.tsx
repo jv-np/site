@@ -216,13 +216,14 @@ function CardBody({
       {p.component ? (
         <div
           className="card-embed"
-          // capture-phase so we run *before* any child's stopPropagation;
-          // the wrapping <a>/role=button must never react to clicks inside
-          // the embedded project widget.
-          onClickCapture={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
+          // capture-phase preventDefault: cancels the wrapping <a>'s
+          // navigation before the click reaches it. preventDefault is a
+          // no-op for <button>s (they have no default action) so the
+          // embed's own controls still receive their clicks.
+          // we don't stopPropagation here because that would block
+          // child handlers in capture; mii-text's own stopPropagation
+          // on bubble already prevents the parent role=button expand.
+          onClickCapture={(e) => e.preventDefault()}
           // anchors are natively draggable, which hijacks text selection
           // inside the embed by spawning a link-drag ghost. cancel it.
           onDragStart={(e) => e.preventDefault()}
