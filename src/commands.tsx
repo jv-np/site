@@ -359,15 +359,15 @@ const contact: Command = {
       </Out>
       <div className="contact">
         <a className="contact-link" href={links.email}>
-          <span><span className="lbl">email</span><br /><span className="val">hi@example.com</span></span>
+          <span><span className="lbl">email</span><br /><span className="val">mii_nipah@pm.me</span></span>
           <span className="mono">→</span>
         </a>
         <a className="contact-link" href={links.github} target="_blank" rel="noopener noreferrer">
-          <span><span className="lbl">github</span><br /><span className="val">@jv</span></span>
+          <span><span className="lbl">github</span><br /><span className="val">@jv-np</span></span>
           <span className="mono">↗</span>
         </a>
         <a className="contact-link" href={links.twitter} target="_blank" rel="noopener noreferrer">
-          <span><span className="lbl">twitter</span><br /><span className="val">@jv</span></span>
+          <span><span className="lbl">twitter</span><br /><span className="val">@_mii_nipah</span></span>
           <span className="mono">↗</span>
         </a>
       </div>
