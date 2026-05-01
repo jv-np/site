@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
-import videoUrl from '../assets/sourcity-on-sourcity.mp4';
 import { ShowcaseFrame } from './ShowcaseFrame';
+
+// Served from R2 via the Worker (/media/* handler) — see worker/index.ts.
+// The mp4 exceeds the Workers Assets 25 MiB per-file limit, so we don't bundle it.
+const videoUrl = '/media/sourcity-on-sourcity.mp4';
 
 export default function Sourcity() {
   const rootRef = useRef<HTMLDivElement | null>(null);

@@ -16,6 +16,12 @@
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "jv-n-mii-nipah"
+		}
 	]
 	/**
 	 * Smart Placement
