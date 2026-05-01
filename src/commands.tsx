@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Fragment } from 'react';
+import { Fragment, Suspense } from 'react';
 import { links, projects } from './data';
 import { articles, findArticle } from './articles';
 import { Err, Out, RunChip } from './ui';
@@ -118,6 +118,11 @@ const showcase: Command = {
             </div>
             <div className="card-title">{p.name}</div>
             <p className="card-desc">{p.description}</p>
+            {p.component ? (
+                <Suspense fallback={<p className="card-desc">loading project...</p>}>
+                  <p.component />
+                </Suspense>
+            ) : null}
             <ul className="tags">
               {p.tags.map((t) => <li key={t} className="tag">{t}</li>)}
             </ul>
