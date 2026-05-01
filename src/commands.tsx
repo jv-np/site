@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Fragment } from 'react';
 import { links, projects } from './data';
 import { articles, findArticle } from './articles';
 
@@ -41,13 +42,25 @@ function Panel(props: { title: string; meta?: string; children: ReactNode }) {
 const help: Command = {
   name: 'help',
   summary: 'list available commands',
-  run: () => (
+  run: (_a, ctx) => (
     <Panel title="help" meta={`${Object.keys(registry).length} commands`}>
       <div className="help">
         {Object.values(registry)
           .filter((c) => !c.hidden)
           .map((c) => (
-            <RowFragment key={c.name} k={c.name} v={c.summary} />
+            <Fragment key={c.name}>
+              <div className="k mono">
+                <button
+                  type="button"
+                  className="path"
+                  onClick={() => ctx.type(c.name)}
+                  title={c.usage ?? c.name}
+                >
+                  {c.name}
+                </button>
+              </div>
+              <div className="v">{c.summary}</div>
+            </Fragment>
           ))}
       </div>
       <p className="text-out" style={{ marginTop: 14 }}>
@@ -58,15 +71,6 @@ const help: Command = {
     </Panel>
   ),
 };
-
-function RowFragment({ k, v }: { k: string; v: string }) {
-  return (
-    <>
-      <div className="k mono">{k}</div>
-      <div className="v">{v}</div>
-    </>
-  );
-}
 
 const about: Command = {
   name: 'about',
@@ -370,7 +374,19 @@ const aliasCmd: Command = {
           ) : (
             <div className="help">
               {entries.map(([k, v]) => (
-                <RowFragment key={k} k={k} v={v} />
+                <Fragment key={k}>
+                  <div className="k mono">
+                    <button
+                      type="button"
+                      className="path"
+                      onClick={() => ctx.type(k)}
+                      title={`= ${v}`}
+                    >
+                      {k}
+                    </button>
+                  </div>
+                  <div className="v mono"><span className="dim">= </span>{v}</div>
+                </Fragment>
               ))}
             </div>
           )}
