@@ -460,6 +460,54 @@ const clear: Command = {
   run: (_a, ctx) => { ctx.clear(); return null; },
 };
 
+/* tiny pool of tips. mix of terminal-ux, navigation, and tasteful asides.
+   each invocation picks one at random (no immediate repeats within a session). */
+const TIPS: Array<(ctx: CommandCtx) => ReactNode> = [
+  () => <>press <span className="hl">tab</span> to autocomplete · <span className="hl">↑/↓</span> walks history.</>,
+  (ctx) => <>try <RunChip ctx={ctx} cmd="ls">ls</RunChip> to see sections, or <RunChip ctx={ctx} cmd="ls all">ls all</RunChip> for everything.</>,
+  () => <>define your own shortcut: <span className="mono ac">alias g=showcase</span> — it persists across reloads.</>,
+  () => <>every clickable <span className="mono">chip</span> below the prompt just types-and-runs a command. nothing magic.</>,
+  (ctx) => <>articles support fuzzy match: <RunChip ctx={ctx} cmd="article macro">article macro</RunChip> opens by fragment.</>,
+  () => <>good code reads like prose. if a function needs a comment to explain <em>what</em>, rename it.</>,
+  () => <>premature abstraction costs more than duplication. wait for the third occurrence.</>,
+  () => <>the best dx is the one you don't notice — until you try a worse one.</>,
+  (ctx) => <>filter writing by tag: <RunChip ctx={ctx} cmd="articles devex">articles devex</RunChip>.</>,
+  () => <>small, focused tools beat one giant framework. compose, don't inherit.</>,
+  () => <>if you can't explain it on a napkin, the design isn't done yet.</>,
+  (ctx) => <>this whole site is a terminal. <RunChip ctx={ctx} cmd="help">help</RunChip> lists everything.</>,
+  () => <>read the source before the docs. the source can't lie.</>,
+  () => <>your future self is the most underestimated user of your code.</>,
+  (ctx) => <>bored? <RunChip ctx={ctx} cmd="showcase">showcase</RunChip> has a few things worth poking at.</>,
+];
+
+function TipBody({ ctx }: { ctx: CommandCtx }) {
+  // pick a fresh tip on every render of this output (stable once mounted).
+  const [pick] = useState(() => {
+    const last = Number(sessionStorage.getItem('tips:last') ?? '-1');
+    let i = Math.floor(Math.random() * TIPS.length);
+    if (TIPS.length > 1 && i === last) i = (i + 1) % TIPS.length;
+    sessionStorage.setItem('tips:last', String(i));
+    return i;
+  });
+  const tip = TIPS[pick];
+  return (
+    <Panel title="tip" meta={`#${String(pick + 1).padStart(2, '0')}/${String(TIPS.length).padStart(2, '0')}`}>
+      <Out>
+        <span className="ac mono">»</span> {tip(ctx)}
+      </Out>
+      <Out style={{ marginTop: 8 }}>
+        <span className="dim">run </span><RunChip ctx={ctx} cmd="tips">tips</RunChip><span className="dim"> again for another.</span>
+      </Out>
+    </Panel>
+  );
+}
+
+const tipsCmd: Command = {
+  name: 'tips',
+  summary: 'a fresh tip, every time',
+  run: (_a, ctx) => <TipBody ctx={ctx} />,
+};
+
 const blog: Command = { ...articlesCmd, name: 'blog', summary: 'alias for articles', hidden: true };
 const projectsAlias: Command = { ...showcase, name: 'projects', summary: 'alias for showcase', hidden: true };
 const exitCmd: Command = {
@@ -538,12 +586,12 @@ const unaliasCmd: Command = {
 };
 
 export const registry: Record<string, Command> = Object.fromEntries(
-  [help, about, showcase, articlesCmd, article, contact, open, ls, catCmd, whoami, date, echo, aliasCmd, unaliasCmd, clear, exitCmd, blog, projectsAlias]
+  [help, about, showcase, articlesCmd, article, contact, open, ls, catCmd, whoami, date, echo, tipsCmd, aliasCmd, unaliasCmd, clear, exitCmd, blog, projectsAlias]
     .map((c) => [c.name, c]),
 );
 
 /** primary commands surfaced in the floating completion menu */
-export const primaryNames = ['help', 'about', 'showcase', 'articles', 'contact', 'clear'] as const;
+export const primaryNames = ['help', 'about', 'showcase', 'articles', 'contact', 'tips', 'clear'] as const;
 
 export function unknownCommand(name: string): ReactNode {
   return <Err>command not found: <span className="mono">{name}</span> — try <span className="mono">help</span></Err>;
