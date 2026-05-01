@@ -75,22 +75,22 @@ const about: Command = {
         <div>
           <h3>identity</h3>
           <p>
-            <span className="hl">jv</span> — engineer, designer, occasional writer.
-            i build small, sharp tools and write about how.
+            <span className="hl">jv.n</span> — engineer, thinker, occasional writer.
+            i like building cool stuff
           </p>
           <p>
             currently focused on <span className="ac">developer experience</span>,{' '}
-            <span className="ac">design systems</span>, and{' '}
-            <span className="ac">AI-assisted workflows</span>.
+            <span className="ac">small and focused tooling</span>, and{' '}
+            <span className="ac">useful reusable libraries</span>.
           </p>
         </div>
         <div>
           <h3>stack</h3>
           <ul>
-            <li><strong>languages</strong> — typescript, rust, python, go</li>
-            <li><strong>frontend</strong> — react, vite, css the hard way</li>
-            <li><strong>backend</strong> — node, cloudflare workers, postgres</li>
-            <li><strong>design</strong> — figma, mii-style, restraint</li>
+            <li><strong>languages</strong> — csharp, kotlin, swift, rust, typescript</li>
+            <li><strong>frontend</strong> — react, angular, solidjs</li>
+            <li><strong>backend</strong> — asp.net core, sql server, postgresql</li>
+            <li><strong>anything</strong> — i'll simply learn and try everything</li>
           </ul>
         </div>
       </div>
@@ -367,7 +367,7 @@ const contact: Command = {
           <span className="mono">↗</span>
         </a>
         <a className="contact-link" href={links.twitter} target="_blank" rel="noopener noreferrer">
-          <span><span className="lbl">twitter</span><br /><span className="val">@_mii_nipah</span></span>
+          <span><span className="lbl">twitter/x</span><br /><span className="val">@_mii_nipah</span></span>
           <span className="mono">↗</span>
         </a>
       </div>
@@ -395,16 +395,16 @@ const echo: Command = {
 
 const open: Command = {
   name: 'open',
-  summary: 'open a link (github | twitter | email)',
-  usage: 'open <github|twitter|email>',
+  summary: 'open a link (github | twitter/x | email)',
+  usage: 'open <github|twitter/x|email>',
   run: (args) => {
     const target = args[0];
     const url =
       target === 'github' ? links.github :
-      target === 'twitter' ? links.twitter :
+      target === 'twitter/x' ? links.twitter :
       target === 'email' ? links.email : null;
     if (!url) {
-      return <Err>open: unknown target. try <span className="mono">github | twitter | email</span></Err>;
+      return <Err>open: unknown target. try <span className="mono">github | twitter/x | email</span></Err>;
     }
     window.open(url, url.startsWith('mailto:') ? '_self' : '_blank', 'noopener');
     return <Out><span className="dim">→ opening</span> <span className="ac">{target}</span> <span className="dim">…</span></Out>;
