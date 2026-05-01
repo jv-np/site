@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Fragment } from 'react';
 import { links, projects } from './data';
 import { articles, findArticle } from './articles';
+import { Err, Out, RunChip } from './ui';
 
 export type CommandCtx = {
   clear: () => void;
@@ -50,24 +51,17 @@ const help: Command = {
           .map((c) => (
             <Fragment key={c.name}>
               <div className="k mono">
-                <button
-                  type="button"
-                  className="path"
-                  onClick={() => ctx.type(c.name)}
-                  title={c.usage ?? c.name}
-                >
-                  {c.name}
-                </button>
+                <RunChip ctx={ctx} cmd={c.name} title={c.usage ?? c.name}>{c.name}</RunChip>
               </div>
               <div className="v">{c.summary}</div>
             </Fragment>
           ))}
       </div>
-      <p className="text-out" style={{ marginTop: 14 }}>
+      <Out style={{ marginTop: 14 }}>
         <span className="dim">tip:</span> press <span className="hl">tab</span> to complete,
         <span className="hl"> ↑/↓</span> for history,{' '}
         <span className="hl">click any chip</span> below the prompt to run a command.
-      </p>
+      </Out>
     </Panel>
   ),
 };
@@ -155,7 +149,7 @@ const articlesCmd: Command = {
     return (
       <Panel title="articles" meta={q ? `${list.length}/${articles.length} · “${q}”` : `${articles.length} posts`}>
         {list.length === 0 ? (
-          <p className="text-out"><span className="dim">no posts match</span> <span className="hl">{q}</span></p>
+          <Out><span className="dim">no posts match</span> <span className="hl">{q}</span></Out>
         ) : (
           <div className="articles">
             {list.map((a) => (
@@ -174,9 +168,9 @@ const articlesCmd: Command = {
             ))}
           </div>
         )}
-        <p className="text-out" style={{ marginTop: 12 }}>
+        <Out style={{ marginTop: 12 }}>
           <span className="dim">read with</span> <span className="mono ac">article &lt;slug&gt;</span>
-        </p>
+        </Out>
       </Panel>
     );
   },
@@ -189,19 +183,11 @@ const article: Command = {
   run: (args) => {
     const q = args.join(' ').trim();
     if (!q) {
-      return (
-        <p className="err"><span className="glyph">✗</span>
-          <span>article: missing slug. try <span className="mono">articles</span> to list.</span>
-        </p>
-      );
+      return <Err>article: missing slug. try <span className="mono">articles</span> to list.</Err>;
     }
     const a = findArticle(q);
     if (!a) {
-      return (
-        <p className="err"><span className="glyph">✗</span>
-          <span>article: no match for <span className="mono">{q}</span></span>
-        </p>
-      );
+      return <Err>article: no match for <span className="mono">{q}</span></Err>;
     }
     const Body = a.Component;
     return (
@@ -219,10 +205,10 @@ const contact: Command = {
   summary: 'how to reach me',
   run: () => (
     <Panel title="contact" meta="open inbox">
-      <p className="text-out" style={{ marginBottom: 14 }}>
+      <Out style={{ marginBottom: 14 }}>
         inbox is open for <span className="hl">interesting work</span>,{' '}
         <span className="hl">collaborations</span>, or a chat about design tools and devex.
-      </p>
+      </Out>
       <div className="contact">
         <a className="contact-link" href={links.email}>
           <span><span className="lbl">email</span><br /><span className="val">hi@example.com</span></span>
@@ -244,19 +230,19 @@ const contact: Command = {
 const whoami: Command = {
   name: 'whoami',
   summary: 'print current user',
-  run: () => <p className="text-out"><span className="ac">guest</span></p>,
+  run: () => <Out><span className="ac">guest</span></Out>,
 };
 
 const date: Command = {
   name: 'date',
   summary: 'print current date',
-  run: () => <p className="text-out">{new Date().toString().toLowerCase()}</p>,
+  run: () => <Out>{new Date().toString().toLowerCase()}</Out>,
 };
 
 const echo: Command = {
   name: 'echo',
   summary: 'print arguments',
-  run: (args) => <p className="text-out">{args.join(' ')}</p>,
+  run: (args) => <Out>{args.join(' ')}</Out>,
 };
 
 const open: Command = {
@@ -270,14 +256,10 @@ const open: Command = {
       target === 'twitter' ? links.twitter :
       target === 'email' ? links.email : null;
     if (!url) {
-      return (
-        <p className="err"><span className="glyph">✗</span>
-          <span>open: unknown target. try <span className="mono">github | twitter | email</span></span>
-        </p>
-      );
+      return <Err>open: unknown target. try <span className="mono">github | twitter | email</span></Err>;
     }
     window.open(url, url.startsWith('mailto:') ? '_self' : '_blank', 'noopener');
-    return <p className="text-out"><span className="dim">→ opening</span> <span className="ac">{target}</span> <span className="dim">…</span></p>;
+    return <Out><span className="dim">→ opening</span> <span className="ac">{target}</span> <span className="dim">…</span></Out>;
   },
 };
 
@@ -290,15 +272,12 @@ const ls: Command = {
     const what = raw.replace(/\/+$/, '').toLowerCase(); // tolerate trailing slash
     if (what === '' || what === 'all' || what === '.' || what === '~') {
       return (
-        <p className="text-out">
-          <button type="button" className="path" onClick={() => ctx.type('ls showcase')}>showcase/</button>
-          {'  '}
-          <button type="button" className="path" onClick={() => ctx.type('ls articles')}>articles/</button>
-          {'  '}
-          <button type="button" className="path" onClick={() => ctx.type('cat about.md')}>about.md</button>
-          {'  '}
-          <button type="button" className="path" onClick={() => ctx.type('cat contact.md')}>contact.md</button>
-        </p>
+        <Out>
+          <RunChip ctx={ctx} cmd="ls showcase">showcase/</RunChip>{'  '}
+          <RunChip ctx={ctx} cmd="ls articles">articles/</RunChip>{'  '}
+          <RunChip ctx={ctx} cmd="cat about.md">about.md</RunChip>{'  '}
+          <RunChip ctx={ctx} cmd="cat contact.md">contact.md</RunChip>
+        </Out>
       );
     }
     if (what === 'showcase' || what === 'projects') return showcase.run([], ctx);
@@ -307,11 +286,7 @@ const ls: Command = {
     if (what === 'about.md' || what === 'contact.md' || what === 'about' || what === 'contact') {
       return catCmd.run([what], ctx);
     }
-    return (
-      <p className="err"><span className="glyph">✗</span>
-        <span>ls: no such section <span className="mono">'{raw}'</span> — try <span className="mono">ls</span></span>
-      </p>
-    );
+    return <Err>ls: no such section <span className="mono">'{raw}'</span> — try <span className="mono">ls</span></Err>;
   },
 };
 
@@ -325,17 +300,9 @@ const catCmd: Command = {
     if (target === 'about') return about.run([], ctx);
     if (target === 'contact') return contact.run([], ctx);
     if (!raw) {
-      return (
-        <p className="err"><span className="glyph">✗</span>
-          <span>cat: missing file. try <span className="mono">about.md</span> or <span className="mono">contact.md</span></span>
-        </p>
-      );
+      return <Err>cat: missing file. try <span className="mono">about.md</span> or <span className="mono">contact.md</span></Err>;
     }
-    return (
-      <p className="err"><span className="glyph">✗</span>
-        <span>cat: <span className="mono">{raw}</span>: no such file</span>
-      </p>
-    );
+    return <Err>cat: <span className="mono">{raw}</span>: no such file</Err>;
   },
 };
 
@@ -351,11 +318,11 @@ const exitCmd: Command = {
   name: 'exit',
   summary: 'fine, leave',
   run: () => (
-    <p className="text-out">
+    <Out>
       <span className="dim">just close the tab — </span>
       <span className="ac">^W</span>
       <span className="dim"> works too.</span>
-    </p>
+    </Out>
   ),
 };
 
@@ -370,20 +337,13 @@ const aliasCmd: Command = {
       return (
         <Panel title="alias" meta={`${entries.length} defined`}>
           {entries.length === 0 ? (
-            <p className="text-out"><span className="dim">no aliases. try </span><span className="mono ac">alias g=showcase</span></p>
+            <Out><span className="dim">no aliases. try </span><span className="mono ac">alias g=showcase</span></Out>
           ) : (
             <div className="help">
               {entries.map(([k, v]) => (
                 <Fragment key={k}>
                   <div className="k mono">
-                    <button
-                      type="button"
-                      className="path"
-                      onClick={() => ctx.type(k)}
-                      title={`= ${v}`}
-                    >
-                      {k}
-                    </button>
+                    <RunChip ctx={ctx} cmd={k} title={`= ${v}`}>{k}</RunChip>
                   </div>
                   <div className="v mono"><span className="dim">= </span>{v}</div>
                 </Fragment>
@@ -397,8 +357,8 @@ const aliasCmd: Command = {
     if (eq === -1) {
       const v = ctx.aliases[joined];
       return v
-        ? <p className="text-out"><span className="mono ac">{joined}</span> <span className="dim">=</span> <span className="mono">{v}</span></p>
-        : <p className="err"><span className="glyph">✗</span><span>alias: <span className="mono">{joined}</span> not defined</span></p>;
+        ? <Out><span className="mono ac">{joined}</span> <span className="dim">=</span> <span className="mono">{v}</span></Out>
+        : <Err>alias: <span className="mono">{joined}</span> not defined</Err>;
     }
     const name = joined.slice(0, eq).trim();
     let value = joined.slice(eq + 1).trim();
@@ -406,13 +366,13 @@ const aliasCmd: Command = {
       value = value.slice(1, -1);
     }
     if (!name || !value) {
-      return <p className="err"><span className="glyph">✗</span><span>alias: usage <span className="mono">alias name=value</span></span></p>;
+      return <Err>alias: usage <span className="mono">alias name=value</span></Err>;
     }
     if (registry[name] && !ctx.aliases[name]) {
-      return <p className="err"><span className="glyph">✗</span><span>alias: <span className="mono">{name}</span> shadows a builtin (refuse)</span></p>;
+      return <Err>alias: <span className="mono">{name}</span> shadows a builtin (refuse)</Err>;
     }
     ctx.setAlias(name, value);
-    return <p className="text-out"><span className="dim">+</span> <span className="mono ac">{name}</span> <span className="dim">→</span> <span className="mono">{value}</span></p>;
+    return <Out><span className="dim">+</span> <span className="mono ac">{name}</span> <span className="dim">→</span> <span className="mono">{value}</span></Out>;
   },
 };
 
@@ -422,10 +382,10 @@ const unaliasCmd: Command = {
   usage: 'unalias <name>',
   run: (args, ctx) => {
     const name = (args[0] || '').trim();
-    if (!name) return <p className="err"><span className="glyph">✗</span><span>unalias: missing name</span></p>;
-    if (!ctx.aliases[name]) return <p className="err"><span className="glyph">✗</span><span>unalias: <span className="mono">{name}</span> not defined</span></p>;
+    if (!name) return <Err>unalias: missing name</Err>;
+    if (!ctx.aliases[name]) return <Err>unalias: <span className="mono">{name}</span> not defined</Err>;
     ctx.setAlias(name, null);
-    return <p className="text-out"><span className="dim">−</span> <span className="mono">{name}</span></p>;
+    return <Out><span className="dim">−</span> <span className="mono">{name}</span></Out>;
   },
 };
 
@@ -438,9 +398,5 @@ export const registry: Record<string, Command> = Object.fromEntries(
 export const primaryNames = ['help', 'about', 'showcase', 'articles', 'contact', 'clear'] as const;
 
 export function unknownCommand(name: string): ReactNode {
-  return (
-    <p className="err"><span className="glyph">✗</span>
-      <span>command not found: <span className="mono">{name}</span> — try <span className="mono">help</span></span>
-    </p>
-  );
+  return <Err>command not found: <span className="mono">{name}</span> — try <span className="mono">help</span></Err>;
 }

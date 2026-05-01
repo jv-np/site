@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { primaryNames, registry, unknownCommand } from './commands';
+import { usePersistentState } from './usePersistentState';
 import './App.css';
 
 type Entry = {
@@ -64,37 +65,26 @@ function HiName({ name, q }: { name: string; q: string }) {
 function App() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [input, setInput] = useState('');
-  const [history, setHistory] = useState<string[]>(() => {
-    try {
-      const raw = localStorage.getItem('jv:history');
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed.slice(-200) : [];
-    } catch { return []; }
-  });
+  const [history, setHistory] = usePersistentState<string[]>(
+    'jv:history',
+    [],
+    (raw) => (Array.isArray(raw) ? (raw as unknown[]).map(String).slice(-200) : undefined),
+  );
   const [histIdx, setHistIdx] = useState<number | null>(null);
   const [menuIdx, setMenuIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(true);
 
   // persisted aliases: name -> command line
-  const [aliases, setAliases] = useState<Record<string, string>>(() => {
-    try {
-      const raw = localStorage.getItem('jv:aliases');
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed as Record<string, string> : {};
-    } catch { return {}; }
-  });
+  const [aliases, setAliases] = usePersistentState<Record<string, string>>(
+    'jv:aliases',
+    {},
+    (raw) => (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, string> : undefined),
+  );
 
   // persist history
   useEffect(() => {
-    try { localStorage.setItem('jv:history', JSON.stringify(history.slice(-200))); } catch { /* ignore */ }
-  }, [history]);
-
-  // persist aliases
-  useEffect(() => {
-    try { localStorage.setItem('jv:aliases', JSON.stringify(aliases)); } catch { /* ignore */ }
-  }, [aliases]);
+    if (history.length > 200) setHistory((h) => h.slice(-200));
+  }, [history, setHistory]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -138,13 +128,10 @@ function App() {
     const cmd = registry[name.toLowerCase()];
     const output: ReactNode = cmd ? cmd.run(args, ctx) : unknownCommand(name);
 
-    if (cmd && cmd.name === 'clear') {
-      setHistory((h) => (h[h.length - 1] === line ? h : [...h, line]));
-      return;
-    }
-    setEntries((prev) => [...prev, { id: nextId++, cmd: line, output }]);
     setHistory((h) => (h[h.length - 1] === line ? h : [...h, line]));
-  }, [ctx]);
+    if (cmd && cmd.name === 'clear') return; // clear handled its own output
+    setEntries((prev) => [...prev, { id: nextId++, cmd: line, output }]);
+  }, [ctx, setHistory]);
 
   /* ── boot ──────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -285,32 +272,19 @@ function App() {
       return;
     }
 
-    // shell history — ↑/↓ always (terminal-correct)
-    if (e.key === 'ArrowUp' && !e.ctrlKey) {
-      if (history.length === 0) return;
+    // shell history — ↑/↓ always (terminal-correct), Ctrl-↑/↓ as fallback
+    const isUp = e.key === 'ArrowUp';
+    const isDown = e.key === 'ArrowDown';
+    if (isUp || isDown) {
+      if (isUp && history.length === 0) return;
+      if (isDown && histIdx === null) return;
       e.preventDefault();
-      const idx = histIdx === null ? history.length - 1 : Math.max(0, histIdx - 1);
-      setHistIdx(idx);
-      setInput(history[idx]);
-      return;
-    }
-    if (e.key === 'ArrowDown' && !e.ctrlKey) {
-      if (histIdx === null) return;
-      e.preventDefault();
-      const idx = histIdx + 1;
-      if (idx >= history.length) { setHistIdx(null); setInput(''); }
-      else { setHistIdx(idx); setInput(history[idx]); }
-      return;
-    }
-
-    // alt-history fallback: Ctrl-↑/↓ always traverses history
-    if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      e.preventDefault();
-      if (e.key === 'ArrowUp' && history.length) {
+      if (isUp) {
         const idx = histIdx === null ? history.length - 1 : Math.max(0, histIdx - 1);
-        setHistIdx(idx); setInput(history[idx]);
-      } else if (e.key === 'ArrowDown' && histIdx !== null) {
-        const idx = histIdx + 1;
+        setHistIdx(idx);
+        setInput(history[idx]);
+      } else {
+        const idx = histIdx! + 1;
         if (idx >= history.length) { setHistIdx(null); setInput(''); }
         else { setHistIdx(idx); setInput(history[idx]); }
       }

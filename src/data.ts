@@ -40,10 +40,10 @@ export const projects: Project[] = [
     url: '#',
     year: '2024',
   },
-];
+] as const;
 
 export const links = {
   github: 'https://github.com/',
   twitter: 'https://twitter.com/',
   email: 'mailto:hi@example.com',
-};
+} as const;
