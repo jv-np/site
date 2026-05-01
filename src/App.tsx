@@ -110,6 +110,7 @@ function App() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef(false);
   const pointerActionRef = useRef(false);
+  const tourFiredRef = useRef(false);
   const aliasesRef = useRef(aliases);
   useEffect(() => { aliasesRef.current = aliases; }, [aliases]);
   const typeAndRunRef = useRef<(cmd: string) => void>(() => {});
@@ -232,32 +233,76 @@ function App() {
     return m.name.slice(q.length);
   }, [input, completions]);
 
-  /* ── click chip → type out + run ───────────────────────────────────── */
-  const typeAndRun = useCallback((cmd: string) => {
-    if (typingRef.current) return;
+  /* ── click chip → type out + run (single or sequence) ──────────────── */
+  const typeAndRunSequence = useCallback((cmds: string[]) => {
+    if (typingRef.current || cmds.length === 0) return;
     typingRef.current = true;
     inputRef.current?.focus();
     setMenuOpen(false);
     setInput('');
-    let i = 0;
-    const step = () => {
-      i++;
-      setInput(cmd.slice(0, i));
-      if (i < cmd.length) {
-        setTimeout(step, 26 + Math.random() * 30);
-      } else {
-        setTimeout(() => {
-          execute(cmd);
-          setInput('');
-          setHistIdx(null);
-          setMenuOpen(true);
-          typingRef.current = false;
-        }, 130);
-      }
+
+    let cmdIdx = 0;
+    const typeOne = () => {
+      const cmd = cmds[cmdIdx];
+      let i = 0;
+      const step = () => {
+        i++;
+        setInput(cmd.slice(0, i));
+        if (i < cmd.length) {
+          setTimeout(step, 26 + Math.random() * 30);
+        } else {
+          setTimeout(() => {
+            execute(cmd);
+            setInput('');
+            setHistIdx(null);
+            cmdIdx++;
+            if (cmdIdx < cmds.length) {
+              setTimeout(typeOne, 650);
+            } else {
+              setMenuOpen(true);
+              typingRef.current = false;
+            }
+          }, 130);
+        }
+      };
+      setTimeout(step, cmdIdx === 0 ? 50 : 0);
     };
-    setTimeout(step, 50);
+    typeOne();
   }, [execute]);
+
+  const typeAndRun = useCallback((cmd: string) => typeAndRunSequence([cmd]), [typeAndRunSequence]);
   useEffect(() => { typeAndRunRef.current = typeAndRun; }, [typeAndRun]);
+
+  /* ── first-visit (or 8h-cold) suggested tour ───────────────────────── */
+  useEffect(() => {
+    const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+    const key = 'jv:lastVisit';
+    let last: number | null = null;
+    try {
+      const raw = localStorage.getItem(key);
+      const n = raw == null ? NaN : Number(raw);
+      if (Number.isFinite(n)) last = n;
+    } catch { /* ignore */ }
+
+    if (last !== null && Date.now() - last < EIGHT_HOURS_MS) return;
+    if (tourFiredRef.current) return;
+
+    const sequences: string[][] = [
+      ['about', 'tips'],
+      ['showcase'],
+      ['articles'],
+      ['about', 'contact'],
+      ['contact', 'tips'],
+    ];
+    const pick = sequences[Math.floor(Math.random() * sequences.length)];
+    const tid = window.setTimeout(() => {
+      if (tourFiredRef.current) return;
+      tourFiredRef.current = true;
+      try { localStorage.setItem(key, String(Date.now())); } catch { /* ignore */ }
+      typeAndRunSequence(pick);
+    }, 900);
+    return () => window.clearTimeout(tid);
+  }, [typeAndRunSequence]);
 
   /* ── input handling ────────────────────────────────────────────────── */
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
