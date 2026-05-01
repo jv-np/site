@@ -310,6 +310,22 @@ html, body, #root { background: var(--bg); }
   border-radius: 4px;
   overflow: hidden;
 }
+
+.scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* desktop: cap showcase at 2 rows; the rest scrolls vertically.
+   503px = 2 rows of 250px + 1px gutter + 2px top/bottom border
+   (box-sizing: border-box is set globally). */
+@media (min-width: 721px) {
+  .showcase-frame > .grid {
+    max-height: 503px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
 .card {
   background: var(--bg);
   padding: 14px 16px;
@@ -378,30 +394,36 @@ html, body, #root { background: var(--bg); }
 }
 .card-link:hover { color: var(--accent); background: var(--bg-deep); }
 
-/* modal-style expanded card floats over the showcase frame. the
-   in-grid card stays visually intact (no layout shift), and the
-   modal renders a fresh instance of the embed beside it. */
+/* modal-style expanded card. horizontally centered on the showcase
+   frame (so it feels anchored to the section), but with a content-sized
+   height capped to the viewport so a short frame can't crush it.
+   the backdrop is fixed to the viewport so the dim covers everything. */
 .card-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
-  z-index: 3;
+  z-index: 30;
   cursor: zoom-out;
   animation: showcase-fade 160ms var(--ease) both;
 }
 .card-expanded.card-modal {
+  /* anchored to the showcase frame on both axes (centered), so it stays
+     visually balanced relative to the section regardless of how tall the
+     content is. capped to the viewport so very tall content scrolls
+     internally instead of pushing the page. */
   position: absolute;
-  top: 16px;
-  bottom: 16px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   width: min(640px, calc(100% - 32px));
   min-width: 0;
   max-width: min(640px, calc(100% - 32px));
   height: auto;
-  z-index: 4;
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  z-index: 31;
   border: 1px solid var(--border-hi);
   box-shadow:
     0 16px 60px rgba(0, 0, 0, 0.6),
@@ -444,28 +466,19 @@ html, body, #root { background: var(--bg); }
   to { opacity: 1; }
 }
 @keyframes showcase-pop {
-  from { opacity: 0; transform: translateX(-50%) scale(0.97); }
-  to { opacity: 1; transform: translateX(-50%) scale(1); }
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 @media (max-width: 720px) {
-  /* on mobile, escape the .panel border-left + padding by going fixed
-     so the modal occupies the actual viewport instead of sitting inside
-     the (already-indented) panel column. */
-  .card-backdrop {
-    position: fixed;
-    inset: 0;
-  }
+  /* on mobile, escape the (narrow) panel column and center on the viewport. */
   .card-expanded.card-modal {
     position: fixed;
     top: 50%;
-    bottom: auto;
-    left: 8px;
-    right: 8px;
-    width: auto;
-    transform: translateY(-50%);
-    max-width: none;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
     max-height: calc(100svh - 16px);
-    overflow-y: auto;
     animation: showcase-fade 200ms var(--ease) both;
   }
   /* let the embed size to its content instead of stretching to fill

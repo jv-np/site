@@ -98,3 +98,91 @@ code, kbd, .mono { font-family: var(--font-mono); }
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* ─── code blocks (shiki + rehype-pretty-code + runtime <Code/>) ──────── */
+/* shared block frame */
+figure[data-rehype-pretty-code-figure] > pre,
+.code-block-wrap pre,
+pre.code-block,
+.prose pre {
+  margin: 14px 0;
+  padding: 14px 16px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 420px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg);
+}
+figure[data-rehype-pretty-code-figure] > pre code,
+.code-block-wrap pre code,
+pre.code-block code,
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+  /* wrap long lines instead of forcing horizontal scroll */
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* language label on top-right */
+figure[data-rehype-pretty-code-figure] {
+  position: relative;
+  margin: 14px 0;
+}
+figure[data-rehype-pretty-code-figure] > pre { margin: 0; }
+figure[data-rehype-pretty-code-figure] [data-rehype-pretty-code-title] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-dim);
+  padding: 6px 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+figure[data-rehype-pretty-code-figure]:has([data-rehype-pretty-code-title]) > pre {
+  border-radius: 0 0 6px 6px;
+}
+
+/* per-line numbering (when rehype-pretty-code adds it) */
+code[data-line-numbers] { counter-reset: line; }
+code[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 1.6rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: var(--fg-faint);
+}
+
+/* highlighted lines / words */
+[data-highlighted-line] {
+  background: var(--accent-dim);
+  box-shadow: inset 2px 0 var(--accent);
+}
+[data-highlighted-chars] {
+  background: var(--accent-dim);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* inline code (markdown `like this`, plus runtime inline <Code inline/>) */
+.prose :not(pre) > code,
+.code-inline-wrap > code,
+code.code-inline {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12.5px;
+  color: var(--fg);
+}

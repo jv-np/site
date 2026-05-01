@@ -74,6 +74,24 @@ export const projects: Project[] = [
     year: '2026',
     component: React.lazy(() => import('./showcase/sourcity')),
     expandable: true,
+  },
+  {
+    id: '08',
+    name: 'hbfs',
+    description: 'an interesting algorithm for fast flood-filling on large graphs, with applications in floating island detection.',
+    tags: ['algorithm', 'flood-fill', 'graph'],
+    url: 'https://github.com/mii-nipah/hbfs',
+    year: '2026',
+  },
+  {
+    id: '09',
+    name: 'voxcpm-rs',
+    description: 'a rust implementation for the VoxCPM2 text-to-speech model, with a convenient API that powers mii-sound.',
+    tags: ['rust', 'text-to-speech', 'library'],
+    url: 'https://github.com/mii-nipah/voxcpm-rs',
+    year: '2026',
+    component: React.lazy(() => import('./showcase/voxcpm-rs')),
+    expandable: true,
   }
 ] as const;
 
