@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { primaryNames, registry, unknownCommand } from './commands';
 import { MAX_HISTORY_ENTRIES, normalizeAliases, normalizeHistory, resolveAlias } from './terminal';
 import { usePersistentState } from './usePersistentState';
+import { applyMeta, pathToCommand, syncUrl } from './routing';
 import './App.css';
 
 type Entry = {
@@ -22,7 +23,7 @@ const POINTER_ACTION_SELECTOR = 'a[href], button, [role="button"], [role="link"]
 const BOOT_ASCII = String.raw`   _                
   (_)__   __  _ __            jv.n shell
   | |\ \ / / | '_ \           v1.0.0 · 2026
-  | | \ V /_ | | | |          a portfolio that thinks it's a terminal
+  | | \ V /_ | | | |          a website that thinks it's a terminal
  _/ |  \_/(_)|_| |_|
 |__/                
 `.trimEnd();
@@ -138,10 +139,10 @@ function App() {
     [],
   );
 
-  const execute = useCallback((raw: string) => {
+  const execute = useCallback((raw: string, opts: { silent?: boolean; urlMode?: 'push' | 'replace' | 'none' } = {}) => {
     const line = raw.trim();
     if (!line) {
-      setEntries((prev) => [...prev, { id: nextId++, cmd: '', output: null }]);
+      if (!opts.silent) setEntries((prev) => [...prev, { id: nextId++, cmd: '', output: null }]);
       return;
     }
     // resolve alias on first token (with cycle protection)
@@ -155,6 +156,7 @@ function App() {
         ? historyEntries
         : [...historyEntries, line].slice(-MAX_HISTORY_ENTRIES)
     ));
+    if (cmd && opts.urlMode !== 'none') syncUrl(cmd.name, args, opts.urlMode ?? 'push');
     if (cmd && cmd.name === 'clear') return; // clear handled its own output
     setEntries((prev) => [...prev, { id: nextId++, cmd: line, output }]);
   }, [ctx, setHistory]);
@@ -164,6 +166,32 @@ function App() {
     const timerId = window.setTimeout(() => inputRef.current?.focus(), 30);
     return () => window.clearTimeout(timerId);
   }, []);
+
+  /* ── deep-linking: open the page implied by the URL on first paint ─── */
+  const deepLinkedRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkedRef.current) return;
+    deepLinkedRef.current = true;
+    const routed = pathToCommand(window.location.pathname);
+    applyMeta(window.location.pathname);
+    if (!routed) return;
+    tourFiredRef.current = true; // user came in via a deep link, skip the tour
+    const line = routed.args.length ? `${routed.name} ${routed.args.join(' ')}` : routed.name;
+    execute(line, { urlMode: 'replace' });
+  }, [execute]);
+
+  /* ── back/forward: re-run whatever the new URL implies ─────────────── */
+  useEffect(() => {
+    const onPop = () => {
+      applyMeta(window.location.pathname);
+      const routed = pathToCommand(window.location.pathname);
+      if (!routed) return;
+      const line = routed.args.length ? `${routed.name} ${routed.args.join(' ')}` : routed.name;
+      execute(line, { urlMode: 'none' });
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [execute]);
 
   /* ── auto-scroll ───────────────────────────────────────────────────── */
   useEffect(() => {

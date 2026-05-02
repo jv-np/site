@@ -17,7 +17,7 @@ export const projects: Project[] = [
   {
     id: '01',
     name: 'jv-n',
-    description: 'this site. terminal-flavored portfolio + writing space.',
+    description: 'this site. terminal-flavored website + writing space.',
     tags: ['react', 'vite', 'cloudflare'],
     url: 'https://github.com/jv-np/site',
     year: '2026',
