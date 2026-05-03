@@ -102,6 +102,14 @@ export const projects: Project[] = [
     year: '2025 - 2026',
     component: React.lazy(() => import('./showcase/edify.mc')),
     expandable: true,
+  },
+  {
+    id: '11',
+    name: 'app-maker-mcp',
+    description: 'a mcp that allows agents to operate autonomously with real applications, running a x11 server for productive iteration sessions',
+    tags: ['mcp', 'agent', 'tooling'],
+    url: 'https://github.com/mii-nipah/app-maker-mcp',
+    year: '2026',
   }
 ] as const;
 
