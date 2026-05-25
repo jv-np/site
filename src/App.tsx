@@ -18,6 +18,7 @@ const PROMPT_USER = 'guest';
 const PROMPT_HOST = 'jv';
 const PROMPT_CWD  = '~';
 const TEXT_ENTRY_SELECTOR = 'input, textarea, select, [contenteditable="true"]';
+const KEYBOARD_CONTROL_SELECTOR = 'a[href], button, [role="button"], [role="link"], summary, video[controls], audio[controls]';
 const OUTPUT_SELECTOR = '.entry, .panel, .prose, .boot, .text-out, .statusbar';
 
 const BOOT_ASCII = String.raw`   _                
@@ -40,6 +41,15 @@ function Ps1() {
       <span className="gt">$</span>
     </span>
   );
+}
+
+function isPlainTypingEvent(event: KeyboardEvent) {
+  return event.key.length === 1 && !event.altKey && !event.ctrlKey && !event.metaKey && !event.isComposing;
+}
+
+function hasTextSelection() {
+  const selection = window.getSelection();
+  return Boolean(selection && selection.toString().length > 0);
 }
 
 /* ── highlight matching prefix inside a name ─────────────────────────── */
@@ -106,6 +116,22 @@ function App() {
   const focusPrompt = useCallback((preventScroll = true) => {
     inputRef.current?.focus({ preventScroll });
   }, []);
+
+  const insertPromptText = useCallback((text: string) => {
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? caretPos;
+    const end = el?.selectionEnd ?? caretPos;
+    const next = input.slice(0, start) + text + input.slice(end);
+    const nextCaret = start + text.length;
+
+    setInput(next);
+    setCaretPos(nextCaret);
+    setMenuOpen(true);
+    setHistIdx(null);
+    window.requestAnimationFrame(() => {
+      inputRef.current?.setSelectionRange(nextCaret, nextCaret);
+    });
+  }, [caretPos, input]);
 
   /* ── execution ─────────────────────────────────────────────────────── */
   const ctx = useMemo(
@@ -208,6 +234,24 @@ function App() {
       focusPrompt();
     }
   };
+
+  /* ── type anywhere → summon prompt ────────────────────────────────── */
+  useEffect(() => {
+    const onGlobalKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || !isPlainTypingEvent(event) || hasTextSelection()) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && target.closest(`${TEXT_ENTRY_SELECTOR}, ${KEYBOARD_CONTROL_SELECTOR}`)) return;
+      if (document.activeElement === inputRef.current) return;
+
+      event.preventDefault();
+      bottomRef.current?.scrollIntoView({ block: 'end' });
+      focusPrompt(false);
+      insertPromptText(event.key);
+    };
+
+    window.addEventListener('keydown', onGlobalKeyDown);
+    return () => window.removeEventListener('keydown', onGlobalKeyDown);
+  }, [focusPrompt, insertPromptText]);
 
   /* ── completions ───────────────────────────────────────────────────── */
   const completions = useMemo(() => {
