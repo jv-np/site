@@ -18,7 +18,7 @@ const PROMPT_USER = 'guest';
 const PROMPT_HOST = 'jv';
 const PROMPT_CWD  = '~';
 const TEXT_ENTRY_SELECTOR = 'input, textarea, select, [contenteditable="true"]';
-const POINTER_ACTION_SELECTOR = 'a[href], button, [role="button"], [role="link"], summary, video[controls], audio[controls]';
+const OUTPUT_SELECTOR = '.entry, .panel, .prose, .boot, .text-out, .statusbar';
 
 const BOOT_ASCII = String.raw`   _                
   (_)__   __  _ __            jv.n shell
@@ -27,18 +27,6 @@ const BOOT_ASCII = String.raw`   _
  _/ |  \_/(_)|_| |_|
 |__/                
 `.trimEnd();
-
-function closestElement(target: EventTarget | null, selector: string) {
-  return target instanceof Element ? target.closest(selector) : null;
-}
-
-function isTextEntryTarget(target: EventTarget | null) {
-  return Boolean(closestElement(target, TEXT_ENTRY_SELECTOR));
-}
-
-function shouldReturnPromptFocus(target: EventTarget | null) {
-  return !isTextEntryTarget(target) && Boolean(closestElement(target, POINTER_ACTION_SELECTOR));
-}
 
 function Ps1() {
   return (
@@ -110,11 +98,14 @@ function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef(false);
-  const pointerActionRef = useRef(false);
   const tourFiredRef = useRef(false);
   const aliasesRef = useRef(aliases);
   useEffect(() => { aliasesRef.current = aliases; }, [aliases]);
   const typeAndRunRef = useRef<(cmd: string) => void>(() => {});
+
+  const focusPrompt = useCallback((preventScroll = true) => {
+    inputRef.current?.focus({ preventScroll });
+  }, []);
 
   /* ── execution ─────────────────────────────────────────────────────── */
   const ctx = useMemo(
@@ -163,9 +154,9 @@ function App() {
 
   /* ── boot ──────────────────────────────────────────────────────────── */
   useEffect(() => {
-    const timerId = window.setTimeout(() => inputRef.current?.focus(), 30);
+    const timerId = window.setTimeout(() => focusPrompt(), 30);
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [focusPrompt]);
 
   /* ── deep-linking: open the page implied by the URL on first paint ─── */
   const deepLinkedRef = useRef(false);
@@ -210,22 +201,12 @@ function App() {
   const refocus = (e: React.MouseEvent) => {
     const sel = window.getSelection();
     if (sel && sel.toString().length > 0) return;
-    const tgt = e.target as HTMLElement | null;
-    if (tgt && tgt.closest(`${POINTER_ACTION_SELECTOR}, ${TEXT_ENTRY_SELECTOR}, .strip`)) return;
-    inputRef.current?.focus();
-  };
-
-  const trackPointerAction = (e: React.PointerEvent) => {
-    pointerActionRef.current = shouldReturnPromptFocus(e.target);
-  };
-
-  const refocusAfterPointerAction = () => {
-    if (!pointerActionRef.current) return;
-    pointerActionRef.current = false;
-    window.requestAnimationFrame(() => {
-      if (isTextEntryTarget(document.activeElement)) return;
-      inputRef.current?.focus();
-    });
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.closest(`${TEXT_ENTRY_SELECTOR}, .strip, ${OUTPUT_SELECTOR}`)) return;
+    if (target.closest('.active-line') || target === e.currentTarget || target.classList.contains('term-inner')) {
+      focusPrompt();
+    }
   };
 
   /* ── completions ───────────────────────────────────────────────────── */
@@ -265,7 +246,7 @@ function App() {
   const typeAndRunSequence = useCallback((cmds: string[]) => {
     if (typingRef.current || cmds.length === 0) return;
     typingRef.current = true;
-    inputRef.current?.focus();
+    focusPrompt(false);
     setMenuOpen(false);
     setInput('');
 
@@ -296,7 +277,7 @@ function App() {
       setTimeout(step, cmdIdx === 0 ? 50 : 0);
     };
     typeOne();
-  }, [execute]);
+  }, [execute, focusPrompt]);
 
   const typeAndRun = useCallback((cmd: string) => typeAndRunSequence([cmd]), [typeAndRunSequence]);
   useEffect(() => { typeAndRunRef.current = typeAndRun; }, [typeAndRun]);
@@ -416,8 +397,6 @@ function App() {
   return (
     <div
       className="term"
-      onPointerDownCapture={trackPointerAction}
-      onClickCapture={refocusAfterPointerAction}
       onMouseUp={refocus}
     >
       {/* status strip */}

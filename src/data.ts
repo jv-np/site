@@ -110,6 +110,22 @@ export const projects: Project[] = [
     tags: ['mcp', 'agent', 'tooling'],
     url: 'https://github.com/mii-nipah/app-maker-mcp',
     year: '2026',
+  },
+  {
+    id: '12',
+    name: 'mii-memory',
+    description: 'a program that is both an MPC and a unix-like tool for managing snippets of information, with a built-in visualizer.',
+    tags: ['memory', 'tooling', 'mcp', 'information-retrieval', 'visualization'],
+    url: 'https://github.com/mii-nipah/mii-memory',
+    year: '2026',
+  },
+  {
+    id: '13',
+    name: 'mii-wakeup',
+    description: 'a tiny tool to set up wake word detection on your machine, with a convenient CLI and a small custom wake word model.',
+    tags: ['wake-word-detection', 'tooling', 'ai'],
+    url: 'https://github.com/mii-nipah/mii-wakeup',
+    year: '2026',
   }
 ] as const;
 

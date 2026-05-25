@@ -4,6 +4,8 @@ import { links, projects } from './data';
 import { articles, findArticle } from './articles';
 import type { Command } from './commandTypes';
 import { Panel, Showcase, TipBody } from './commandComponents';
+import { mdxComponents } from './mdxComponentMap';
+import { MdxContent } from './mdxComponents';
 import { Err, Out, RunChip } from './ui';
 
 /* ─── command implementations ────────────────────────────────────────── */
@@ -141,7 +143,9 @@ const article: Command = {
     return (
       <Panel title={a.title} meta={`${fmtDate(a.date)} · ${a.readingMin}m · ${a.tags.join(', ')}`}>
         <div className="prose">
-          <Body />
+          <MdxContent>
+            <Body components={mdxComponents} />
+          </MdxContent>
         </div>
       </Panel>
     );

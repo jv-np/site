@@ -1,5 +1,9 @@
 import type { ComponentType } from 'react';
 
+type ArticleComponentProps = {
+  components?: Record<string, unknown>;
+};
+
 export type ArticleFrontmatter = {
   title: string;
   date: string;       // ISO yyyy-mm-dd
@@ -9,11 +13,11 @@ export type ArticleFrontmatter = {
 
 export type Article = ArticleFrontmatter & {
   slug: string;
-  Component: ComponentType;
+  Component: ComponentType<ArticleComponentProps>;
 };
 
 type MDXModule = {
-  default: ComponentType;
+  default: ComponentType<ArticleComponentProps>;
   frontmatter: Partial<ArticleFrontmatter>;
 };
 

@@ -7,6 +7,6 @@ declare module '*.mdx' {
     tags?: string[];
     [key: string]: unknown;
   };
-  const Component: ComponentType<Record<string, unknown>>;
+  const Component: ComponentType<{ components?: Record<string, unknown> }>;
   export default Component;
 }

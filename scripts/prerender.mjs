@@ -25,6 +25,8 @@ import remarkFrontmatter from 'remark-frontmatter';
  import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import rehypePrettyCode from 'rehype-pretty-code';
 import { projects, links } from '../src/data.ts';
+import { MdxContent } from '../src/mdxComponents.tsx';
+import { mdxComponents } from '../src/mdxComponentMap.ts';
 
 // Production domain. Baked into canonical URLs, OpenGraph, sitemap, JSON-LD.
 const SITE_URL = 'https://mii-nipah.com';
@@ -61,7 +63,9 @@ async function compileArticle(file) {
     ],
   });
   const fm = mod.frontmatter ?? {};
-  const html = renderToStaticMarkup(React.createElement(mod.default));
+  const html = renderToStaticMarkup(
+    React.createElement(MdxContent, null, React.createElement(mod.default, { components: mdxComponents })),
+  );
   return {
     slug: slugFromFile(file),
     title: String(fm.title ?? slugFromFile(file)),
