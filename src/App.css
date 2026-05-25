@@ -213,7 +213,7 @@ html, body, #root { background: var(--bg); }
   cursor: pointer;
   white-space: nowrap;
   font: inherit;
-  color: var(--fg-dim);
+  color: var(--accent);
   position: relative;
   font-family: var(--font-mono);
 }
@@ -447,7 +447,7 @@ html, body, #root { background: var(--bg); }
 .card-close {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--fg-dim);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 16px;
   line-height: 1;
@@ -950,34 +950,57 @@ html, body, #root { background: var(--bg); }
   font-size: 13px;
   line-height: 1.45;
 }
-.prose .link-preview-host {
-  color: var(--accent);
-  font-size: 11px;
-  font-family: var(--font-mono);
-}
-.prose .link-preview-path {
-  color: var(--fg-faint);
-  font-size: 11px;
-  font-family: var(--font-mono);
-  overflow-wrap: anywhere;
-}
 .prose .link-preview-open {
-  display: inline-flex;
-  align-self: flex-start;
-  margin-top: 2px;
-  color: var(--fg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 4px;
+  color: var(--fg-dim);
   text-decoration: none;
-  border: 1px solid var(--border-hi);
-  border-radius: 3px;
-  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 7px 6px 9px;
   font-size: 11px;
   font-family: var(--font-mono);
+  background: var(--bg-deep);
 }
 .prose .link-preview-open:hover,
 .prose .link-preview-open:focus-visible {
-  background: var(--accent);
   border-color: var(--accent);
-  color: var(--bg);
+  background: rgba(0,255,136,0.04);
+  color: var(--accent);
+}
+.prose .link-preview-open:hover .link-preview-destination,
+.prose .link-preview-open:focus-visible .link-preview-destination {
+  color: var(--accent);
+}
+.prose .link-preview-open:hover .link-preview-open-icon,
+.prose .link-preview-open:focus-visible .link-preview-open-icon {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.prose .link-preview-destination {
+  color: var(--accent);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+.prose .link-preview-open-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  line-height: 1;
 }
 .prose .footnotes {
   margin-top: 24px;
@@ -997,6 +1020,13 @@ html, body, #root { background: var(--bg); }
 .prose .footnote-backref:focus-visible {
   background: var(--accent);
   color: var(--bg);
+}
+
+.prose author {
+  display: block;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--fg-dim);
 }
 
 /* clickable path token (used in `ls` listing) — looks like normal text,

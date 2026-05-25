@@ -161,6 +161,47 @@ function findChildProps<TProps>(children: ReactNode, component: (props: TProps) 
   return null;
 }
 
+function parseTargetUrl(src: string) {
+  try {
+    const baseUrl = typeof window === 'undefined' ? 'https://mii-nipah.com/' : window.location.href;
+    return new URL(src, baseUrl);
+  } catch {
+    return null;
+  }
+}
+
+function linkTargetParts(src: string) {
+  const url = parseTargetUrl(src);
+  if (!url) return { label: src, href: src };
+  return {
+    href: url.href,
+    label: url.href.replace(/^https?:\/\//, ''),
+  };
+}
+
+function actionLabel(openLabel: ReactNode) {
+  return typeof openLabel === 'string' ? openLabel : 'open full page';
+}
+
+function LinkTargetCard({ src, openLabel }: { src: string; openLabel: ReactNode }) {
+  const target = linkTargetParts(src);
+  const label = actionLabel(openLabel);
+
+  return (
+    <a
+      className="link-preview-open"
+      href={target.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={target.href}
+      aria-label={`${label}: ${target.href}`}
+    >
+      <span className="link-preview-destination">{target.label}</span>
+      <span className="link-preview-open-icon" aria-hidden="true">↗</span>
+    </a>
+  );
+}
+
 export function MdxContent({ children }: MdxContentProps) {
   const [notes, setNotes] = useState<Record<string, ReactNode>>({});
   const [previews, setPreviews] = useState<Record<string, LinkPreviewEntry>>({});
@@ -302,9 +343,7 @@ export function Link({ children, openLabel = 'open full page' }: LinkProps) {
           <span className="link-preview-body">
             {preview ?? <span className="link-preview-title">{trigger}</span>}
             {to ? (
-              <a className="link-preview-open" href={to.src} target="_blank" rel="noopener noreferrer">
-                {openLabel}
-              </a>
+              <LinkTargetCard src={to.src} openLabel={openLabel} />
             ) : null}
           </span>
         </span>
@@ -362,9 +401,7 @@ export function LinkRef({ id, children, label }: LinkRefProps) {
           <span className="link-preview-body">
             {entry?.preview ?? <span className="link-preview-title">{trigger}</span>}
             {entry?.to ? (
-              <a className="link-preview-open" href={entry.to} target="_blank" rel="noopener noreferrer">
-                {entry.openLabel ?? 'open full page'}
-              </a>
+              <LinkTargetCard src={entry.to} openLabel={entry.openLabel ?? 'open full page'} />
             ) : null}
           </span>
         </span>
