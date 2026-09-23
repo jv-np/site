@@ -126,6 +126,14 @@ export const projects: Project[] = [
     tags: ['wake-word-detection', 'tooling', 'ai'],
     url: 'https://github.com/mii-nipah/mii-wakeup',
     year: '2026',
+  },
+  {
+    id: '14',
+    name: 'autoscope',
+    description: 'a tool for wayland/x11 apps automation. It allows humans or AI agents to spawn and control applications without interfering in the normal desktop usage of the computer.',
+    tags: ['mcp', 'agent', 'tooling'],
+    url: 'https://github.com/mii-nipah/autoscope',
+    year: '2026'
   }
 ] as const;
 
